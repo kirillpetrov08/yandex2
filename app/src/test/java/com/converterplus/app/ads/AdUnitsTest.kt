@@ -75,8 +75,16 @@ class AdUnitsTest {
     }
 
     @Test
-    fun `debug build runs in test mode by default`() {
-        // В gradle.properties ads.testMode=true — до релиза показы идут в тестовом режиме.
-        assertEquals(true, BuildConfig.ADS_TEST_MODE)
+    fun `release configuration uses real rsya ids`() {
+        // Боевая конфигурация проекта: gradle.properties → ads.testMode=false и три ID вида
+        // R-M-XXXXXXX-Y. Тест сторожит её вместе с проверкой в app/build.gradle.kts и шагом CI:
+        // если кто-то вернёт демо-строки или тестовый режим, прогон упадёт до магазина.
+        assertFalse(BuildConfig.ADS_TEST_MODE)
+        val units = AdUnits.fromBuildConfig()
+        assertTrue(units.isValid)
+        assertFalse(units.hasDemoUnitsInRelease)
+        listOf(units.bannerUnitId, units.interstitialUnitId, units.rewardedUnitId).forEach { id ->
+            assertTrue("$id должен быть боевым ID блока РСЯ", AdUnits.isValidUnitId(id))
+        }
     }
 }
