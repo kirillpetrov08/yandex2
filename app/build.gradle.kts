@@ -1,0 +1,164 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// ---------------------------------------------------------------------------
+// Реклама: значения берутся из gradle.properties (раздел «Реклама Яндекс РСЯ»).
+// ---------------------------------------------------------------------------
+fun adProperty(key: String, default: String): String {
+    val raw = project.findProperty(key) as? String
+    return if (raw.isNullOrBlank()) default else raw.trim()
+}
+
+val adsTestMode: Boolean = adProperty("ads.testMode", "true").toBoolean()
+val adsBannerUnitId: String = adProperty("ads.bannerUnitId", "demo-banner-yandex")
+val adsInterstitialUnitId: String = adProperty("ads.interstitialUnitId", "demo-interstitial-yandex")
+val adsRewardedUnitId: String = adProperty("ads.rewardedUnitId", "demo-rewarded-yandex")
+val adsInterstitialEveryNth: Int = adProperty("ads.interstitialEveryNthConversion", "3").toIntOrNull() ?: 3
+val adsInterstitialMinInterval: Int = adProperty("ads.interstitialMinIntervalSeconds", "120").toIntOrNull() ?: 120
+val adsRewardedNoAdsMinutes: Int = adProperty("ads.rewardedNoAdsMinutes", "30").toIntOrNull() ?: 30
+
+if (!adsTestMode) {
+    require(!adsBannerUnitId.startsWith("demo-") &&
+        !adsInterstitialUnitId.startsWith("demo-") &&
+        !adsRewardedUnitId.startsWith("demo-")
+    ) { "ads.testMode=false, но ID блоков остались демо-версиями. Пропишите реальные ID вида R-M-XXXXXXX-Y." }
+}
+
+// ---------------------------------------------------------------------------
+// Подпись релиза. Секреты приходят из переменных окружения (CI) или из shell.
+// Если секретов нет — сборка проходит, но AAB остаётся неподписанным.
+// ---------------------------------------------------------------------------
+val keystoreFilePath: String? = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+val keystorePassword: String? = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+val keyAlias: String? = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
+val keyPassword: String? = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+val hasSigningSecrets: Boolean = keystoreFilePath != null && keystorePassword != null &&
+    keyAlias != null && keyPassword != null
+
+android {
+    namespace = "com.converterplus.app"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "com.converterplus.app"
+        minSdk = 26
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0.0"
+
+        resourceConfigurations += "ru"
+
+        buildConfigField("boolean", "ADS_TEST_MODE", adsTestMode.toString())
+        buildConfigField("String", "ADS_BANNER_UNIT_ID", "\"$adsBannerUnitId\"")
+        buildConfigField("String", "ADS_INTERSTITIAL_UNIT_ID", "\"$adsInterstitialUnitId\"")
+        buildConfigField("String", "ADS_REWARDED_UNIT_ID", "\"$adsRewardedUnitId\"")
+        buildConfigField("int", "ADS_INTERSTITIAL_EVERY_NTH_CONVERSION", adsInterstitialEveryNth.toString())
+        buildConfigField("int", "ADS_INTERSTITIAL_MIN_INTERVAL_SECONDS", adsInterstitialMinInterval.toString())
+        buildConfigField("int", "ADS_REWARDED_NO_ADS_MINUTES", adsRewardedNoAdsMinutes.toString())
+    }
+
+    signingConfigs {
+        create("release") {
+            if (hasSigningSecrets) {
+                // Именно rootProject.file(): путь задаётся от корня репозитория, иначе CI падает.
+                storeFile = rootProject.file(keystoreFilePath!!)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            isMinifyEnabled = false
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            if (hasSigningSecrets) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "AAB не подписан, для магазина нужны секреты: " +
+                        "KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD",
+                )
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "/META-INF/DEPENDENCIES",
+            )
+        }
+    }
+
+    lint {
+        abortOnError = false
+        warningsAsErrors = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
+dependencies {
+    val composeBom = platform("androidx.compose:compose-bom:2025.04.01")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.core:core-ktx:1.16.0")
+    // AppCompat нужен, в том числе, как транзитивная зависимость SDK Яндекс Мобил Ads.
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.navigation:navigation-compose:2.8.9")
+
+    // Фоновая конвертация
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+    // Файлы: SAF-папка, EXIF-ориентация
+    implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
+
+    // Реклама Яндекс РСЯ (баннер, межстраничная, за вознаграждение)
+    implementation("com.yandex.android:mobileads:8.6.0")
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
+}

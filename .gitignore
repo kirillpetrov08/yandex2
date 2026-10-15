@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.cxx/
+
+# Ключи подписи — никогда не коммитить
+*.jks
+*.keystore
+keystore.properties
+upload-keystore.jks
+
+# Секреты CI
+*.env
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# Данные OCR (тяжёлые, кладутся вручную в assets/tessdata — см. docs/DEPLOY.md)
+app/src/main/assets/tessdata/*.traineddata

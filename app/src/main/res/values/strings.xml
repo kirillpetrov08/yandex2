@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ============ Общие ============ -->
+    <string name="app_name">Конвертер+</string>
+    <string name="app_subtitle">Всё в одном месте</string>
+
+    <string name="action_convert">Конвертировать</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_save_all">Сохранить всё</string>
+    <string name="action_share">Поделиться</string>
+    <string name="action_open_folder">Открыть папку</string>
+    <string name="action_open_file">Открыть файл</string>
+    <string name="action_cancel">Отменить</string>
+    <string name="action_retry">Попробовать снова</string>
+    <string name="action_continue">Продолжить</string>
+    <string name="action_skip">Пропустить</string>
+    <string name="action_next">Далее</string>
+    <string name="action_replace">Заменить</string>
+    <string name="action_from_gallery">Из галереи</string>
+    <string name="action_from_files">Из файлов</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_move_up">Поднять выше</string>
+    <string name="action_move_down">Опустить ниже</string>
+    <string name="action_remove_watermark">Убрать водяной знак</string>
+    <string name="action_watch_short_video">Посмотрите короткое видео</string>
+
+    <!-- ============ Онбординг ============ -->
+    <string name="onboarding_title_1">Все конвертеры в одном приложении</string>
+    <string name="onboarding_text_1">Изображения, PDF и документы. Без регистрации и лишних программ.</string>
+    <string name="onboarding_title_2">Работает без интернета</string>
+    <string name="onboarding_text_2">Файлы не покидают телефон: вся обработка идёт прямо на устройстве.</string>
+    <string name="onboarding_title_3">Быстро, красиво и бесплатно</string>
+    <string name="onboarding_text_3">Три нажатия — и файл готов. Приложение бесплатное, его поддерживает реклама.</string>
+    <string name="onboarding_consent_title">Реклама и данные</string>
+    <string name="onboarding_consent_text">Реклама помогает приложению оставаться бесплатным. Если включить персонализацию, объявления будут подбираться по данным рекламных сервисов Яндекса. Ваши файлы никуда не отправляются.</string>
+    <string name="onboarding_consent_switch">Персонализированная реклама</string>
+    <string name="onboarding_privacy_link">Политика конфиденциальности</string>
+    <string name="onboarding_finish">Принять и продолжить</string>
+
+    <!-- ============ Главная ============ -->
+    <string name="home_quick_start">Быстрый старт</string>
+    <string name="home_all_tools">Все инструменты</string>
+
+    <string name="tool_images_title">Изображения</string>
+    <string name="tool_images_subtitle">JPG, PNG, WEBP</string>
+    <string name="tool_pdf_to_images_title">PDF → Фото</string>
+    <string name="tool_pdf_to_images_subtitle">Страницы PDF в картинки</string>
+    <string name="tool_images_to_pdf_title">Фото → PDF</string>
+    <string name="tool_images_to_pdf_subtitle">Картинки в один PDF</string>
+    <string name="tool_ocr_title">Извлечение текста</string>
+    <string name="tool_ocr_subtitle">Текст из картинки и PDF</string>
+    <string name="tool_audio_title">Аудио</string>
+    <string name="tool_audio_subtitle">MP3, WAV, M4A</string>
+    <string name="tool_video_title">Видео</string>
+    <string name="tool_video_subtitle">MP4, MOV, MKV</string>
+
+    <string name="tool_soon">Скоро</string>
+    <string name="tool_soon_message">Инструмент появится в ближайшем обновлении — устанавливать ничего не придётся.</string>
+    <string name="tool_soon_hint">Пока доступны инструменты выше. Загляните сюда после обновления.</string>
+
+    <!-- ============ Экран инструмента ============ -->
+    <string name="tool_pick_file_title">Выберите файл</string>
+    <string name="tool_pick_file_hint">Нажмите, чтобы выбрать файл</string>
+    <string name="tool_recent_files">Недавние</string>
+    <string name="tool_format">Формат результата</string>
+    <string name="tool_pages">Страницы</string>
+    <string name="tool_pages_all">Все страницы</string>
+    <string name="tool_pages_pick">Выбрать страницы</string>
+    <string name="tool_page_size">Размер страницы</string>
+    <string name="tool_page_size_a4">A4</string>
+    <string name="tool_page_size_fit">По размеру фото</string>
+    <string name="tool_quality">Качество</string>
+    <string name="tool_order_title">Порядок страниц</string>
+    <string name="tool_order_hint">Перетащите карточку или используйте стрелки</string>
+    <string name="tool_files_count">Файлов выбрано: %1$d</string>
+    <string name="tool_pages_count">Страниц: %1$d</string>
+    <string name="tool_add_more">Добавить ещё</string>
+    <string name="tool_converting">Конвертируем…</string>
+    <string name="tool_converting_slow">Это может занять немного времени…</string>
+    <string name="tool_result_title">Готово!</string>
+    <string name="tool_result_before">Было</string>
+    <string name="tool_result_after">Стало</string>
+    <string name="tool_result_saved">Экономия</string>
+    <string name="tool_result_files">Файлов: %1$d</string>
+    <string name="tool_result_watermark_note">В бесплатной версии на изображения и PDF добавляется небольшой водяной знак.</string>
+    <string name="tool_watermark_removed">Водяной знак убран. Спасибо за поддержку!</string>
+    <string name="tool_saved_to_downloads">Сохранено в «Загрузки»</string>
+    <string name="tool_saved_to_folder">Сохранено в выбранную папку</string>
+
+    <!-- ============ Форматы ============ -->
+    <string name="format_jpg">JPG</string>
+    <string name="format_png">PNG</string>
+    <string name="format_webp">WEBP</string>
+    <string name="format_pdf">PDF</string>
+    <string name="format_txt">TXT</string>
+    <string name="format_wav">WAV</string>
+    <string name="format_m4a">M4A</string>
+    <string name="format_ogg">OGG/Opus</string>
+    <string name="format_mp4">MP4</string>
+
+    <string name="hint_jpg">лучше всего для веба</string>
+    <string name="hint_png">без потери качества</string>
+    <string name="hint_webp">меньше размер</string>
+    <string name="hint_pdf">всё в одном файле</string>
+    <string name="hint_txt">обычный текст</string>
+    <string name="hint_wav">без сжатия</string>
+    <string name="hint_m4a">компактно и качественно</string>
+    <string name="hint_ogg">свободный формат</string>
+    <string name="hint_mp4">совместимо везде</string>
+
+    <!-- Причины недоступности форматов -->
+    <string name="reason_heic_needs_android9">HEIC открывается только на Android 9 и новее</string>
+    <string name="reason_avif_needs_android12">AVIF открывается только на Android 12 и новее</string>
+    <string name="reason_format_not_supported">Этот формат пока не поддерживается</string>
+    <string name="reason_output_not_supported">Такой выходной формат недоступен для этого инструмента</string>
+    <string name="reason_opus_no_encoder">Ваше устройство не умеет создавать OGG/Opus</string>
+    <string name="reason_container_not_supported">Не удалось открыть файл: этот контейнер не поддерживается</string>
+    <string name="reason_pdf_password">Файл защищён паролем</string>
+    <string name="reason_tool_soon">Инструмент появится в ближайшем обновлении</string>
+    <string name="reason_wrong_file_type">Для этого инструмента нужен другой тип файла</string>
+
+    <!-- ============ Ошибки ============ -->
+    <string name="err_no_input">Сначала выберите файл</string>
+    <string name="err_no_space">Не хватает места на телефоне. Освободите немного памяти и попробуйте снова</string>
+    <string name="err_cannot_open">Не удалось открыть файл. Возможно, он повреждён</string>
+    <string name="err_generic">Не удалось конвертировать. Попробуйте другой формат</string>
+    <string name="err_pdf_empty">В этом PDF нет страниц</string>
+    <string name="err_cancelled">Конвертация отменена</string>
+    <string name="err_pick_failed">Не удалось прочитать файл. Попробуйте выбрать другой</string>
+    <string name="err_no_pages_selected">Выберите хотя бы одну страницу</string>
+
+    <!-- ============ Диалоги ============ -->
+    <string name="dialog_same_format_title">Файл уже в этом формате</string>
+    <string name="dialog_same_format_text">Файл уже в этом формате. Всё равно конвертировать?</string>
+    <string name="dialog_big_file_title">Большой файл</string>
+    <string name="dialog_big_file_text">Файл больше 200 МБ. Конвертация может занять несколько минут.</string>
+
+    <!-- ============ Уведомления ============ -->
+    <string name="notif_channel_name">Конвертация файлов</string>
+    <string name="notif_channel_description">Прогресс конвертации и сообщение о готовности</string>
+    <string name="notif_progress_title">Конвертируем</string>
+    <string name="notif_action_cancel">Отменить</string>
+    <string name="notif_done_title">Готово</string>
+    <string name="notif_done_text">Откройте приложение, чтобы сохранить результат</string>
+    <string name="notif_failed_title">Не удалось конвертировать</string>
+    <string name="notif_failed_text">Нажмите, чтобы посмотреть подробности</string>
+
+    <!-- ============ История ============ -->
+    <string name="history_title">История</string>
+    <string name="history_empty_title">Здесь появятся ваши конвертации</string>
+    <string name="history_empty_text">Конвертируйте первый файл — он сохранится в этом списке.</string>
+    <string name="history_search_hint">Поиск по названию</string>
+    <string name="history_filter_all">Все</string>
+    <string name="history_status_ready">Не сохранён</string>
+    <string name="history_status_saved">Сохранён</string>
+    <string name="history_status_failed">Ошибка</string>
+    <string name="history_deleted">Запись удалена</string>
+    <string name="history_no_file">Файл недоступен: временная копия удалена системой</string>
+    <string name="history_share">Поделиться</string>
+
+    <!-- ============ Настройки ============ -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_files">Файлы</string>
+    <string name="settings_section_appearance">Внешний вид</string>
+    <string name="settings_section_ads">Реклама</string>
+    <string name="settings_section_about">О приложении</string>
+
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_theme_system">Как в системе</string>
+
+    <string name="settings_folder">Папка сохранения</string>
+    <string name="settings_folder_default">«Загрузки» (по умолчанию)</string>
+    <string name="settings_folder_chosen">Своя папка</string>
+    <string name="settings_folder_reset">Вернуть «Загрузки»</string>
+
+    <string name="settings_quality">Качество по умолчанию</string>
+    <string name="settings_quality_max">Максимальное</string>
+    <string name="settings_quality_balanced">Сбалансированное</string>
+    <string name="settings_quality_min">Минимальный размер</string>
+
+    <string name="settings_notifications">Показывать прогресс в шторке</string>
+    <string name="settings_haptics">Вибрация при успехе</string>
+
+    <string name="settings_remove_ads">Убрать рекламу</string>
+    <string name="settings_personalized">Персонализированная реклама</string>
+    <string name="settings_version">Версия %1$s</string>
+    <string name="settings_privacy">Политика конфиденциальности</string>
+    <string name="settings_write_developer">Написать разработчику</string>
+
+    <!-- ============ Экран «Убрать рекламу» ============ -->
+    <string name="remove_ads_title">Убрать рекламу</string>
+    <string name="remove_ads_text">Посмотрите короткое видео — и 30 минут реклама показываться не будет, а водяной знак с результатов исчезнет. Подписки нет и не будет: приложение остаётся бесплатным.</string>
+    <string name="remove_ads_button">Посмотреть видео</string>
+    <string name="remove_ads_active">Реклама скрыта ещё %1$s</string>
+    <string name="remove_ads_unavailable">Реклама сейчас недоступна. Попробуйте чуть позже.</string>
+    <string name="remove_ads_thanks">Спасибо! Реклама скрыта на 30 минут</string>
+    <string name="remove_ads_no_reward">Ролик закрыт раньше времени — награда не выдана.</string>
+
+    <!-- ============ Водяной знак ============ -->
+    <string name="watermark_text">Конвертер+</string>
+
+    <!-- ============ Content descriptions ============ -->
+    <string name="cd_back">Назад</string>
+    <string name="cd_app_logo">Логотип приложения</string>
+    <string name="cd_tool_icon">Иконка инструмента</string>
+    <string name="cd_file_preview">Превью выбранного файла</string>
+    <string name="cd_progress">Прогресс конвертации</string>
+    <string name="cd_remove_file">Убрать файл из списка</string>
+    <string name="cd_empty_history">Иллюстрация пустой истории</string>
+
+</resources>
