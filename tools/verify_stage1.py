@@ -10,6 +10,10 @@
   6. Баланс скобок в каждом .kt файле (ловит обрезанные файлы).
   7. Нет маркеров-заглушек (TODO / FIXME / "здесь будет").
   8. Количество юнит-тестов.
+  9. Обязательные файлы сборки, воркфлоу и ключи рекламы.
+ 10. В GitHub Actions — компиляция и юнит-тесты, а ошибки выводятся аннотациями
+     к прогону. Полный лог шага виден только после входа в аккаунт GitHub,
+     аннотации же показываются всем и отдают точные файл и строку.
 
 Запуск: python3 tools/verify_stage1.py
 """
@@ -17,7 +21,9 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import sys
+import time
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -435,6 +441,141 @@ def rel(path: str) -> str:
     return os.path.relpath(path, ROOT)
 
 
+# ---------------------------------------------------------------- 10. CI: сборка
+# Ошибки, по которым видно причину падения. Порядок строк сохраняем: сначала
+# ошибки компилятора (файл и строка), потом блок «What went wrong» из Gradle.
+ERROR_LINE_PATTERNS = (
+    re.compile(r"^e: "),                        # ошибки компилятора Kotlin
+    re.compile(r"^\s*error: "),                 # ошибки компилятора Java
+    re.compile(r"^e: file://"),                 # дубль на случай префикса
+    re.compile(r"^> Task .* FAILED$"),          # упавшая задача
+    re.compile(r"FAILURE: Build failed"),
+    re.compile(r"^\* What went wrong:"),
+    re.compile(r"^> Could not"),
+    re.compile(r"^> A problem occurred"),
+    re.compile(r"^> Execution failed for task"),
+    re.compile(r"^(?:Caused by: )"),
+    re.compile(r"FAILED$"),                     # «Класс > метод FAILED» из тестов
+)
+
+CI_DIAGNOSTICS_TIMEOUT = 1500  # секунд: столько ждём Gradle перед тем, как прервать
+ANNOTATION_LIMIT = 2500        # символов в одной аннотации
+ANNOTATION_COUNT = 6           # максимум аннотаций с ошибками
+
+
+def gh_escape_property(text: str) -> str:
+    """Экранирование значения свойства workflow-команды (title=)."""
+    return text.replace("%", "%25").replace("\r", "").replace("\n", "%0A") \
+        .replace(":", "%3A").replace(",", "%2C")
+
+
+def gh_escape_message(text: str) -> str:
+    """Экранирование текста аннотации: переводы строк переносятся, а не рвут команду."""
+    return text.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+
+
+def gh_error(title: str, message: str) -> None:
+    print(f"::error title={gh_escape_property(title)}::{gh_escape_message(message)}", flush=True)
+
+
+def pick_error_lines(lines: list[str]) -> list[str]:
+    """Оставляет строки, по которым видно причину падения (файл, строка, текст)."""
+    picked: list[str] = []
+    for line in lines:
+        for pattern in ERROR_LINE_PATTERNS:
+            if pattern.search(line):
+                picked.append(line.rstrip())
+                break
+    return picked
+
+
+def chunk_lines(lines: list[str], limit: int) -> list[str]:
+    """Собирает строки в порции длиной не больше limit символов."""
+    chunks: list[str] = []
+    current: list[str] = []
+    size = 0
+    for line in lines:
+        if current and size + len(line) + 1 > limit:
+            chunks.append("\n".join(current))
+            current, size = [], 0
+        current.append(line)
+        size += len(line) + 1
+    if current:
+        chunks.append("\n".join(current))
+    return chunks
+
+
+def ci_build_and_report() -> bool:
+    """В GitHub Actions компилирует проект и гоняет юнит-тесты.
+
+    Возвращает True, если можно продолжать проверки. Падение превращается в
+    аннотации к прогону: полный лог шага в браузере требует входа в аккаунт,
+    а аннотации к прогону читаются и через API. Локально (без GITHUB_ACTIONS
+    =true) функция ничего не делает, чтобы правка кода не запускала сборку.
+    """
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return True
+
+    gradlew = os.path.join(ROOT, "gradlew")
+    if not os.path.exists(gradlew):
+        warnings.append("CI: нет ./gradlew — компиляция и тесты в этом шаге пропущены")
+        return True
+
+    command = [gradlew, "--console=plain", "--stacktrace", "testDebugUnitTest"]
+    print("CI: " + " ".join(command), flush=True)
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            errors="replace",
+            bufsize=1,
+        )
+    except OSError as exc:
+        warnings.append(f"CI: не удалось запустить Gradle: {exc}")
+        return True
+
+    collected: list[str] = []
+    deadline = time.monotonic() + CI_DIAGNOSTICS_TIMEOUT
+    assert process.stdout is not None
+    for raw in process.stdout:
+        collected.append(raw.rstrip("\n"))
+        sys.stdout.write(raw)
+        sys.stdout.flush()
+        if time.monotonic() > deadline:
+            process.kill()
+            warnings.append(f"CI: Gradle не уложился в {CI_DIAGNOSTICS_TIMEOUT} с — прерываю")
+            break
+    process.wait()
+
+    # Полный лог — в каталог, который CI забирает артефактом «Отчёт тестов».
+    log_path = os.path.join(ROOT, "app", "build", "reports", "tests",
+                            "testDebugUnitTest", "ci-gradle.log")
+    try:
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(collected) + "\n")
+    except OSError:
+        pass
+
+    if process.returncode == 0:
+        print("CI: компиляция и тесты прошли", flush=True)
+        return True
+
+    print(f"CI: Gradle завершился с кодом {process.returncode}", flush=True)
+    interesting = pick_error_lines(collected)
+    if not interesting:
+        interesting = collected[-25:]
+    for number, chunk in enumerate(chunk_lines(interesting, ANNOTATION_LIMIT), start=1):
+        if number > ANNOTATION_COUNT:
+            gh_error("Ошибок больше", "Остальные строки — в логе шага и в ci-gradle.log")
+            break
+        gh_error(f"Сборка упала ({number})", chunk)
+    return False
+
+
 def main() -> int:
     declared = check_xml()
     strings = declared["string"]
@@ -462,6 +603,11 @@ def main() -> int:
     if errors:
         print(f"\nПРОВАЛЕНО: ошибок {len(errors)}")
         return 1
+
+    if not ci_build_and_report():
+        print("\nПРОВАЛЕНО: сборка или тесты не прошли — смотрите аннотации к прогону")
+        return 1
+
     print("\nСТАТИЧЕСКАЯ ПРОВЕРКА ПРОЙДЕНА")
     return 0
 
