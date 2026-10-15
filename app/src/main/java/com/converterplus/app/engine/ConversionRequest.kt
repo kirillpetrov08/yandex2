@@ -1,6 +1,6 @@
 package com.converterplus.app.engine
 
-/** Инструменты приложения. Часть из них появится в следующих этапах (см. [ToolCatalog]). */
+/** Инструменты приложения: изображения, PDF, OCR, аудио и видео. */
 enum class ToolKind(val id: String) {
     IMAGES("images"),
     PDF_TO_IMAGES("pdf_to_images"),

@@ -8,6 +8,7 @@ import com.converterplus.app.ads.ConsentManager
 import com.converterplus.app.data.SettingsStore
 import com.converterplus.app.data.ThemeMode
 import com.converterplus.app.engine.QualityPreset
+import com.converterplus.app.engine.ocr.TessdataStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,10 @@ data class SettingsUiState(
     val personalizedAds: Boolean = false,
     val adsFreeMinutesLeft: Int = 0,
     val versionName: String = BuildConfig.VERSION_NAME,
+    /** Языковые данные распознавания уже разложены в приватный каталог. */
+    val ocrReady: Boolean = false,
+    /** Сколько занимают данные распознавания на устройстве. */
+    val ocrDataBytes: Long = 0L,
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -34,6 +39,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun refresh() {
         val app = getApplication<Application>()
+        val ocrReady = TessdataStore.isReady(app)
         _state.value = SettingsUiState(
             themeMode = SettingsStore.themeMode,
             quality = SettingsStore.qualityPreset,
@@ -43,6 +49,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             personalizedAds = ConsentManager.isPersonalizedAds(app),
             adsFreeMinutesLeft = Ads.policy(app).adsFreeMinutesLeft(),
             versionName = BuildConfig.VERSION_NAME,
+            ocrReady = ocrReady,
+            ocrDataBytes = if (ocrReady) TessdataStore.sizeBytes(app) else 0L,
         )
     }
 

@@ -151,17 +151,26 @@ fun ToolScreen(
         }
     }
 
-    fun openPicker() {
+    /** «Из галереи» — только картинки. Есть не у всех инструментов (аудио и видео галерея не покажет). */
+    fun openGalleryPicker() {
         val imageOnly = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        when {
-            tool == ToolKind.PDF_TO_IMAGES -> openDocument.launch(arrayOf("application/pdf"))
-            tool == ToolKind.IMAGES_TO_PDF &&
-                ActivityResultContracts.PickVisualMedia.isAvailable(context) ->
-                pickMultipleImages.launch(imageOnly)
-
-            ActivityResultContracts.PickVisualMedia.isAvailable(context) -> pickImage.launch(imageOnly)
-            else -> openDocument.launch(Capabilities.mimeTypesFor(tool))
+        if (tool == ToolKind.IMAGES_TO_PDF) {
+            pickMultipleImages.launch(imageOnly)
+        } else {
+            pickImage.launch(imageOnly)
         }
+    }
+
+    /** «Из файлов» — системный выбор документов с нужными типами. */
+    fun openFilesPicker() {
+        openDocument.launch(Capabilities.mimeTypesFor(tool))
+    }
+
+    /** Основное действие зоны выбора: сначала пробуем галерею, если она уместна. */
+    fun openPicker() {
+        val galleryAvailable = Capabilities.hasGallerySource(tool) &&
+            ActivityResultContracts.PickVisualMedia.isAvailable(context)
+        if (galleryAvailable) openGalleryPicker() else openFilesPicker()
     }
 
     fun requestRewarded(reason: RewardedReason) {
@@ -242,6 +251,9 @@ fun ToolScreen(
                         state = state,
                         viewModel = viewModel,
                         onPickFile = { openPicker() },
+                        onPickFromGallery = { openGalleryPicker() },
+                        onPickFromFiles = { openFilesPicker() },
+                        onWatchRewarded = { reason -> requestRewarded(reason) },
                         onDisabledFormatClick = { reasonRes ->
                             scope.launch {
                                 snackbarHostState.showSnackbar(context.getString(reasonRes))
@@ -340,7 +352,7 @@ fun ToolScreen(
         ) {
             ResultSheetContent(
                 result = result,
-                withWatermark = state.watermark,
+                withWatermark = state.watermark && Capabilities.supportsWatermark(state.tool),
                 onSave = viewModel::saveResult,
                 onShare = viewModel::shareResult,
                 onOpen = viewModel::openSavedLocation,
@@ -372,6 +384,9 @@ private fun ToolContent(
     state: ToolUiState,
     viewModel: ToolViewModel,
     onPickFile: () -> Unit,
+    onPickFromGallery: () -> Unit,
+    onPickFromFiles: () -> Unit,
+    onWatchRewarded: (RewardedReason) -> Unit,
     onDisabledFormatClick: (Int) -> Unit,
 ) {
     Column(
@@ -384,6 +399,13 @@ private fun ToolContent(
     ) {
         if (state.inputs.isEmpty()) {
             PickZone(onClick = onPickFile, busy = state.busy, tool = state.tool)
+            if (!state.busy) {
+                SourceButtons(
+                    tool = state.tool,
+                    onGallery = onPickFromGallery,
+                    onFiles = onPickFromFiles,
+                )
+            }
             RecentsBlock(
                 tool = state.tool,
                 onPicked = { uri -> viewModel.onFilesPicked(listOf(Uri.parse(uri))) },
@@ -414,15 +436,59 @@ private fun ToolContent(
             }
         }
 
-        if (state.tool == ToolKind.PDF_TO_IMAGES) {
-            PagesSection(state = state, viewModel = viewModel)
+        if (Capabilities.supportsPageSelection(state.tool)) {
+            PagesSection(
+                state = state,
+                viewModel = viewModel,
+                titleRes = if (state.tool == ToolKind.OCR) R.string.tool_pages_ocr else R.string.tool_pages,
+            )
         }
 
         if (state.tool == ToolKind.IMAGES_TO_PDF) {
             PageSizeSection(state = state, viewModel = viewModel)
         }
 
-        QualitySection(state = state, viewModel = viewModel)
+        if (state.tool == ToolKind.OCR) {
+            OcrPrecisionSection(state = state, onWatch = { onWatchRewarded(RewardedReason.OCR_PRECISION) })
+        }
+
+        if (Capabilities.hasQualityChoice(state.tool)) {
+            QualitySection(state = state, viewModel = viewModel)
+        }
+    }
+}
+
+/**
+ * Две маленькие кнопки под зоной выбора: «Из галереи» и «Из файлов».
+ * Для PDF, аудио и видео галерея бессмысленна — остаётся только системный выбор файлов.
+ */
+@Composable
+private fun SourceButtons(
+    tool: ToolKind,
+    onGallery: () -> Unit,
+    onFiles: () -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (Capabilities.hasGallerySource(tool)) {
+            OutlinedButton(onClick = onGallery, shape = MaterialTheme.shapes.small) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_tool_image),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.action_from_gallery))
+            }
+        }
+        OutlinedButton(onClick = onFiles, shape = MaterialTheme.shapes.small) {
+            Icon(
+                painter = painterResource(R.drawable.ic_folder_open),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(stringResource(R.string.action_from_files))
+        }
     }
 }
 
@@ -559,6 +625,16 @@ private fun SelectedFilesBlock(
             }
         }
 
+        if (state.tool == ToolKind.AUDIO) {
+            state.audioDurationMs?.let { duration ->
+                Text(
+                    text = stringResource(R.string.tool_audio_duration, Formatting.formatDuration(duration)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         if (state.isMultiFile) {
             Column {
                 Text(
@@ -588,9 +664,9 @@ private fun SelectedFilesBlock(
 }
 
 @Composable
-private fun PagesSection(state: ToolUiState, viewModel: ToolViewModel) {
+private fun PagesSection(state: ToolUiState, viewModel: ToolViewModel, titleRes: Int) {
     Column {
-        SectionHeader(text = stringResource(R.string.tool_pages))
+        SectionHeader(text = stringResource(titleRes))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = state.pagesMode == PagesMode.ALL,
@@ -619,20 +695,24 @@ private fun PagesSection(state: ToolUiState, viewModel: ToolViewModel) {
             }
         }
 
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = state.dpi == ConversionRequest.DPI_LOW,
-                onClick = { viewModel.selectDpi(ConversionRequest.DPI_LOW) },
-                label = { Text("${ConversionRequest.DPI_LOW} dpi") },
-                shape = MaterialTheme.shapes.small,
-            )
-            FilterChip(
-                selected = state.dpi == ConversionRequest.DPI_HIGH,
-                onClick = { viewModel.selectDpi(ConversionRequest.DPI_HIGH) },
-                label = { Text("${ConversionRequest.DPI_HIGH} dpi") },
-                shape = MaterialTheme.shapes.small,
-            )
+        // У PDF → Изображения разрешение рендера страниц выбирается свободно.
+        // У OCR точность повышается только за rewarded-видео (см. OcrPrecisionSection).
+        if (state.tool == ToolKind.PDF_TO_IMAGES) {
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = state.dpi == ConversionRequest.DPI_LOW,
+                    onClick = { viewModel.selectDpi(ConversionRequest.DPI_LOW) },
+                    label = { Text("${ConversionRequest.DPI_LOW} dpi") },
+                    shape = MaterialTheme.shapes.small,
+                )
+                FilterChip(
+                    selected = state.dpi == ConversionRequest.DPI_HIGH,
+                    onClick = { viewModel.selectDpi(ConversionRequest.DPI_HIGH) },
+                    label = { Text("${ConversionRequest.DPI_HIGH} dpi") },
+                    shape = MaterialTheme.shapes.small,
+                )
+            }
         }
     }
 }
@@ -678,6 +758,38 @@ private fun PageSizeSection(state: ToolUiState, viewModel: ToolViewModel) {
                 label = { Text(stringResource(R.string.tool_page_size_fit)) },
                 shape = MaterialTheme.shapes.small,
             )
+        }
+    }
+}
+
+/**
+ * Точное распознавание (только OCR).
+ *
+ * Обычная точность бесплатна: картинка готовится с длинной стороной до 2000 px.
+ * За просмотр rewarded-видео включается режим повышенного разрешения (300 dpi / до 3200 px) —
+ * награда приходит строго из `onAdRewarded` и применяется в `ToolViewModel.onRewardedGranted`.
+ */
+@Composable
+private fun OcrPrecisionSection(state: ToolUiState, onWatch: () -> Unit) {
+    val precise = state.dpi == ConversionRequest.DPI_HIGH
+    Column {
+        SectionHeader(text = stringResource(R.string.tool_ocr_precision_title))
+        Text(
+            text = stringResource(R.string.tool_ocr_precision_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        if (precise) {
+            Text(
+                text = stringResource(R.string.tool_ocr_precision_on),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        } else {
+            OutlinedButton(onClick = onWatch) {
+                Text(stringResource(R.string.tool_ocr_precision_button))
+            }
         }
     }
 }

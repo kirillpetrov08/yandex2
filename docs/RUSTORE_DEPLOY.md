@@ -449,7 +449,7 @@ export KEY_PASSWORD='пароль_от_ключа'
 - [ ] APK подписан `app-signing.keystore` (alias `sign`), проверено `apksigner verify --print-certs`;
 - [ ] APK установлен на телефоне, все шесть инструментов пройдены руками;
 - [ ] `docs/privacy_policy.html` открывается по публичному адресу, текст на русском;
-- [ ] в `Config.kt` заменены `converterplus.example.com`, `support.converterplus@gmail.com`, ссылка на магазин;
+- [ ] в `Config.kt` заменены `support.converterplus@gmail.com` и ссылка на карточку магазина (`PRIVACY_POLICY_URL` уже указывает на GitHub Pages);
 - [ ] иконка 512×512 без прозрачных краёв;
 - [ ] минимум 3 скриншота вертикальной ориентации;
 - [ ] название ≤ 30 символов, краткое описание ≤ 80, полное ≤ 4000;

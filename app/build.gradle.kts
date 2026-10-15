@@ -22,11 +22,21 @@ val adsInterstitialEveryNth: Int = adProperty("ads.interstitialEveryNthConversio
 val adsInterstitialMinInterval: Int = adProperty("ads.interstitialMinIntervalSeconds", "120").toIntOrNull() ?: 120
 val adsRewardedNoAdsMinutes: Int = adProperty("ads.rewardedNoAdsMinutes", "30").toIntOrNull() ?: 30
 
+// Релиз с ads.testMode=false и демо- или опечатанными ID = показы без дохода.
+// Поэтому сборка падает сразу, а не через месяц в кабинете РСЯ.
 if (!adsTestMode) {
-    require(!adsBannerUnitId.startsWith("demo-") &&
-        !adsInterstitialUnitId.startsWith("demo-") &&
-        !adsRewardedUnitId.startsWith("demo-")
-    ) { "ads.testMode=false, но ID блоков остались демо-версиями. Пропишите реальные ID вида R-M-XXXXXXX-Y." }
+    val realUnitId = Regex("^R-M-\\d{4,}-\\d{1,3}$")
+    val unitIds = listOf(
+        "ads.bannerUnitId" to adsBannerUnitId,
+        "ads.interstitialUnitId" to adsInterstitialUnitId,
+        "ads.rewardedUnitId" to adsRewardedUnitId,
+    )
+    val broken = unitIds.filterNot { realUnitId.matches(it.second) }
+    require(broken.isEmpty()) {
+        "ads.testMode=false, но ID блоков не похожи на реальные (нужен вид R-M-XXXXXXX-Y): " +
+            broken.joinToString { "${it.first}=${it.second}" } +
+            ". Возьмите ID из кабинета РСЯ: partner.yandex.ru → Реклама в приложениях → Приложения."
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +167,13 @@ dependencies {
 
     // Реклама Яндекс РСЯ (баннер, межстраничная, за вознаграждение)
     implementation("com.yandex.android:mobileads:8.6.0")
+
+    // Видео: перекодирование в MP4 и извлечение звука (этап 2)
+    implementation("androidx.media3:media3-transformer:1.11.1")
+    implementation("androidx.media3:media3-common:1.11.1")
+
+    // Распознавание текста (этап 4). Библиотека распространяется через JitPack — см. settings.gradle.kts
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

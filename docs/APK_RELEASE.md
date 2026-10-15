@@ -16,8 +16,7 @@
 
 | Категория | Что это | Действие |
 |---|---|---|
-| **Демо-блоки рекламы** | `demo-banner-yandex` и т.д. в `gradle.properties` | заменить на реальные ID `R-M-XXXXXXX-Y` |
-| **Флаг тестового режима** | `ads.testMode=true` | поставить `false` |
+| **Рекламные блоки** | `ads.bannerUnitId` и др. в `gradle.properties` | уже вписаны боевые ID `R-M-20230616-2` / `-4` / `-7` и `ads.testMode=false`; менять только при создании новых блоков |
 | **Контакты и домен** | `Config.kt`, `docs/privacy_policy.html`, `docs/STORE_TEXTS.md` | заменить на свои |
 | **Publisher ID** | `ВАШ_PUBLISHER_ID` в `docs/app-ads.txt` | взять в кабинете РСЯ |
 | **Версия сборки** | `versionCode 1` / `versionName "1.0.0"` | поднять перед каждой загрузкой в магазин |
@@ -27,7 +26,7 @@
 кириллический маркер `ЗАМЕНИТЬ` — через PowerShell, потому что `findstr` в cmd не понимает UTF-8):
 
 ```cmd
-findstr /s /n /c:"converterplus.example.com" app\src\main\java\*.kt
+findstr /s /n /c:"ВАШ_" /c:"demo-" app\src\main\java\*.kt gradle.properties docs\app-ads.txt
 powershell -Command "Get-ChildItem -Recurse app\src\main\java -Filter *.kt | Select-String -Pattern 'ЗАМЕНИТЬ' -Encoding UTF8"
 ```
 
@@ -72,9 +71,10 @@ ads.rewardedNoAdsMinutes=30
 
 Две защиты уже встроены и сработают сами:
 
-- если `ads.testMode=false`, а хоть один ID начинается с `demo-`, **сборка падает** с текстом
-  «Пропишите реальные ID вида R-M-XXXXXXX-Y» — это защита от публикации с демо-блоками
-  (показы без дохода);
+- если `ads.testMode=false`, а хоть один ID не подходит под шаблон `^R-M-\d{4,}-\d{1,3}$`
+  (демо-строка или опечатка), **сборка падает** с текстом
+  «ID блоков не похожи на реальные (нужен вид R-M-XXXXXXX-Y): ads.bannerUnitId=…» —
+  это защита от публикации с демо-блоками (показы без дохода);
 - при запуске приложения в лог пишется конфигурация, по которой видно режим:
   `adb logcat -s ConverterAds` → `SDK готов: Initialized, testMode=false`.
 
@@ -213,7 +213,6 @@ rem 3. Смотрим, что делает реклама
 |---|---|
 | `init: пропущено: согласие не получено` | нормально до прохождения онбординга: SDK намеренно не стартует без согласия |
 | `SDK готов: Initialized, testMode=false` | SDK инициализирован, режим релизный |
-| `config: В релизной сборке остались демо-блоки` | кто-то вернул `demo-` ID — проверьте `gradle.properties` |
 | `config: Некорректные ID рекламных блоков` | ID не совпадает с форматом `R-M-…-Y` |
 
 Плюс визуально: баннер фиксированной высоты внизу главной и истории, межстраничная —
@@ -285,8 +284,8 @@ gradlew.bat testDebugUnitTest
 
 ## 10. Чек-лист перед загрузкой APK
 
-- [ ] `ads.testMode=false` и три реальных ID `R-M-…-Y` в `gradle.properties`, ни одного `demo-`
-- [ ] плейсхолдеров не осталось: `findstr /s /n /c:"converterplus.example.com" /c:"demo-" app\src\main\java\*.kt gradle.properties`
+- [ ] `ads.testMode=false` и три ID `R-M-20230616-2` / `-4` / `-7` в `gradle.properties` (уже так)
+- [ ] плейсхолдеров не осталось: `findstr /s /n /c:"ВАШ_" /c:"demo-" app\src\main\java\*.kt gradle.properties docs\app-ads.txt`
 - [ ] `Config.kt`: почта, ссылка на политику, ссылка на приложение, домен
 - [ ] политика конфиденциальности открывается по ссылке из `Config.PRIVACY_POLICY_URL`
 - [ ] `app-ads.txt` доступен по адресу домена, publisher ID настоящий

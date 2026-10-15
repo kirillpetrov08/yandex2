@@ -1,7 +1,6 @@
 package com.converterplus.app.ui.screens.tool
 
 import android.app.Application
-import android.media.MediaCodecList
 import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
@@ -27,6 +26,8 @@ import com.converterplus.app.engine.PdfPageSize
 import com.converterplus.app.engine.PickedFile
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.engine.ToolKind
+import com.converterplus.app.engine.audio.AudioConverter
+import com.converterplus.app.engine.media.MediaProbe
 import com.converterplus.app.engine.pdf.PdfProbe
 import com.converterplus.app.engine.toMessageRes
 import com.converterplus.app.storage.FileSaver
@@ -84,6 +85,8 @@ data class ToolUiState(
     val showHugeFileDialog: Boolean = false,
     val busy: Boolean = false,
     val watermark: Boolean = true,
+    /** Длительность выбранного аудио — показывается под превью. */
+    val audioDurationMs: Long? = null,
 ) {
     val totalInputBytes: Long get() = inputs.sumOf { it.sizeBytes }
     val isRunning: Boolean get() = progress is ProgressState.Running
@@ -301,8 +304,11 @@ class ToolViewModel(
                 _events.trySend(ToolEvent.Snackbar(R.string.remove_ads_thanks))
             }
 
-            RewardedReason.OCR_PRECISION ->
-                _events.trySend(ToolEvent.Snackbar(R.string.reason_tool_soon))
+            RewardedReason.OCR_PRECISION -> {
+                // Точное распознавание = рендер PDF и подготовка картинки в большем разрешении.
+                _state.update { it.copy(dpi = ConversionRequest.DPI_HIGH) }
+                _events.trySend(ToolEvent.Snackbar(R.string.tool_ocr_precision_on))
+            }
         }
     }
 
@@ -553,41 +559,69 @@ class ToolViewModel(
                 ?: Capabilities.defaultFormat(tool)
             current.copy(formats = options, selectedFormat = selected)
         }
-        if (tool == ToolKind.PDF_TO_IMAGES) {
-            val file = _state.value.inputs.firstOrNull()?.let { File(it.localPath) }
-            val count = file?.let { PdfProbe.pageCount(it) }
-            _state.update { it.copy(pageCount = count) }
+        val firstFile = _state.value.inputs.firstOrNull()?.let { File(it.localPath) }
+        val isPdfInput = firstFile?.extension.equals("pdf", ignoreCase = true)
+        val pageCount = if (Capabilities.supportsPageSelection(tool) && isPdfInput) {
+            firstFile?.let { PdfProbe.pageCount(it) }
+        } else {
+            null
         }
+        val audioDuration = if (tool == ToolKind.AUDIO) {
+            firstFile?.let { AudioConverter.audioDurationMs(it) }
+        } else {
+            null
+        }
+        _state.update { it.copy(pageCount = pageCount, audioDurationMs = audioDuration) }
     }
 
+    /**
+     * Что известно об устройстве и выбранном файле. Проверки идут по-разному для PDF и медиа:
+     * у PDF важно, не защищён ли он паролем, у аудио и видео — есть ли нужные дорожки.
+     */
     private fun deviceInfo(): DeviceInfo {
         val input = _state.value.inputs.firstOrNull()
+        val file = input?.let { File(it.localPath) }
         var canRead = true
         var passwordProtected = false
-        if (tool == ToolKind.PDF_TO_IMAGES && input != null) {
-            when (PdfProbe.probe(File(input.localPath))) {
-                is PdfProbe.Result.PasswordProtected -> {
-                    canRead = false
-                    passwordProtected = true
+        var hasVideoTrack = true
+        var hasAudioTrack = true
+
+        if (file != null) {
+            when {
+                Capabilities.supportsPageSelection(tool) && file.extension.equals("pdf", ignoreCase = true) -> {
+                    when (PdfProbe.probe(file)) {
+                        is PdfProbe.Result.PasswordProtected -> {
+                            canRead = false
+                            passwordProtected = true
+                        }
+
+                        is PdfProbe.Result.Unreadable -> canRead = false
+                        else -> Unit
+                    }
                 }
 
-                is PdfProbe.Result.Unreadable -> canRead = false
-                else -> Unit
+                tool == ToolKind.AUDIO -> {
+                    hasAudioTrack = AudioConverter.hasAudioTrack(file)
+                    canRead = hasAudioTrack
+                }
+
+                tool == ToolKind.VIDEO -> {
+                    hasVideoTrack = MediaProbe.hasVideoTrack(file)
+                    hasAudioTrack = MediaProbe.hasAudioTrack(file)
+                    canRead = hasVideoTrack
+                }
             }
         }
+
         return DeviceInfo(
             sdkInt = Build.VERSION.SDK_INT,
-            hasOpusEncoder = hasOpusEncoder(),
+            hasOpusEncoder = AudioConverter.hasOpusEncoder(),
             canReadInput = canRead,
             inputPasswordProtected = passwordProtected,
+            hasVideoTrack = hasVideoTrack,
+            hasAudioTrack = hasAudioTrack,
         )
     }
-
-    private fun hasOpusEncoder(): Boolean = runCatching {
-        MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.any { info ->
-            info.isEncoder && info.supportedTypes.any { it.equals("audio/opus", ignoreCase = true) }
-        }
-    }.getOrDefault(false)
 
     override fun onCleared() {
         observeJob?.cancel()

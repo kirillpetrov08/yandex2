@@ -54,7 +54,7 @@ data class FormatOption(
 )
 
 /**
- * Что известно о конкретном устройстве. Передаётся из Android-слоя,
+ * Что известно о конкретном устройстве и входном файле. Передаётся из Android-слоя,
  * чтобы сама логика возможностей была чистой и тестируемой.
  */
 data class DeviceInfo(
@@ -65,6 +65,10 @@ data class DeviceInfo(
     val canReadInput: Boolean = true,
     /** true, если PDF защищён паролем. */
     val inputPasswordProtected: Boolean = false,
+    /** Есть ли во входном видео видеодорожка. */
+    val hasVideoTrack: Boolean = true,
+    /** Есть ли во входном видео звуковая дорожка. */
+    val hasAudioTrack: Boolean = true,
 )
 
 /**
@@ -76,14 +80,17 @@ data class DeviceInfo(
  */
 object Capabilities {
 
-    /** Инструменты, которые уже работают. Остальные видны на главной, но помечены «Скоро». */
-    fun isToolAvailable(tool: ToolKind): Boolean = tool in AVAILABLE_TOOLS
-
+    /** Инструменты, которые работают. Список — единственный источник правды для интерфейса. */
     val AVAILABLE_TOOLS: Set<ToolKind> = setOf(
         ToolKind.IMAGES,
         ToolKind.PDF_TO_IMAGES,
         ToolKind.IMAGES_TO_PDF,
+        ToolKind.OCR,
+        ToolKind.AUDIO,
+        ToolKind.VIDEO,
     )
+
+    fun isToolAvailable(tool: ToolKind): Boolean = tool in AVAILABLE_TOOLS
 
     /** Причина недоступности инструмента (ресурс строки). */
     fun toolUnavailableReason(tool: ToolKind): Int? =
@@ -117,7 +124,44 @@ object Capabilities {
                 FormatOption(Formats.PDF, R.string.format_pdf, R.string.hint_pdf, enabled = true),
             )
 
-            ToolKind.OCR, ToolKind.AUDIO, ToolKind.VIDEO -> emptyList()
+            ToolKind.OCR -> listOf(
+                FormatOption(
+                    id = Formats.TXT,
+                    titleRes = R.string.format_txt,
+                    hintRes = R.string.hint_txt,
+                    enabled = ocrReadable(input, device),
+                    disabledReasonRes = if (ocrReadable(input, device)) null else inputReadReason(input, device),
+                ),
+            )
+
+            ToolKind.AUDIO -> {
+                val readable = audioReadable(input, device)
+                listOf(
+                    FormatOption(Formats.M4A, R.string.format_m4a, R.string.hint_m4a, enabled = readable),
+                    FormatOption(Formats.WAV, R.string.format_wav, R.string.hint_wav, enabled = readable),
+                    FormatOption(
+                        id = Formats.OGG,
+                        titleRes = R.string.format_ogg,
+                        hintRes = R.string.hint_ogg,
+                        enabled = readable && opusReason(device) == null,
+                        disabledReasonRes = if (readable) opusReason(device) else null,
+                    ),
+                )
+            }
+
+            ToolKind.VIDEO -> {
+                val readable = videoReadable(input, device)
+                listOf(
+                    FormatOption(Formats.MP4, R.string.format_mp4, R.string.hint_mp4, enabled = readable),
+                    FormatOption(
+                        id = Formats.M4A,
+                        titleRes = R.string.format_audio_only,
+                        hintRes = R.string.hint_audio_only,
+                        enabled = readable && device.hasAudioTrack,
+                        disabledReasonRes = if (readable && !device.hasAudioTrack) R.string.err_no_audio_track else null,
+                    ),
+                )
+            }
         }
     }
 
@@ -140,6 +184,19 @@ object Capabilities {
 
     private fun pdfReadable(input: InputInfo?, device: DeviceInfo): Boolean =
         input?.mediaKind == MediaKind.PDF && !device.inputPasswordProtected && device.canReadInput
+
+    /** Картинка или PDF для распознавания текста. */
+    private fun ocrReadable(input: InputInfo?, device: DeviceInfo): Boolean =
+        input != null &&
+            (input.mediaKind == MediaKind.IMAGE || input.mediaKind == MediaKind.PDF) &&
+            device.canReadInput &&
+            !device.inputPasswordProtected
+
+    private fun audioReadable(input: InputInfo?, device: DeviceInfo): Boolean =
+        input?.mediaKind == MediaKind.AUDIO && device.canReadInput && device.hasAudioTrack
+
+    private fun videoReadable(input: InputInfo?, device: DeviceInfo): Boolean =
+        input?.mediaKind == MediaKind.VIDEO && device.canReadInput && device.hasVideoTrack
 
     /**
      * Причина, по которой входной файл нельзя прочитать.
@@ -190,16 +247,38 @@ object Capabilities {
                 else -> null
             }
 
-            ToolKind.OCR, ToolKind.AUDIO, ToolKind.VIDEO -> R.string.reason_tool_soon
+            ToolKind.OCR -> when {
+                output != Formats.TXT -> R.string.reason_output_not_supported
+                input?.mediaKind != MediaKind.IMAGE && input?.mediaKind != MediaKind.PDF ->
+                    R.string.reason_wrong_file_type
+
+                else -> null
+            }
+
+            ToolKind.AUDIO -> when {
+                output !in setOf(Formats.M4A, Formats.WAV, Formats.OGG) ->
+                    R.string.reason_output_not_supported
+
+                input?.mediaKind != MediaKind.AUDIO -> R.string.reason_wrong_file_type
+                output == Formats.OGG -> opusReason(device)
+                else -> null
+            }
+
+            ToolKind.VIDEO -> when {
+                output !in setOf(Formats.MP4, Formats.M4A) -> R.string.reason_output_not_supported
+                input?.mediaKind != MediaKind.VIDEO -> R.string.reason_wrong_file_type
+                output == Formats.M4A && !device.hasAudioTrack -> R.string.err_no_audio_track
+                else -> null
+            }
         }
     }
 
     /**
-     * Причина недоступности OGG/Opus. Проверяется отдельно, потому что зависит от энкодера
-     * конкретного устройства (этап 3 — аудио).
+     * Причина недоступности OGG/Opus: нужен Android 10+ (MediaMuxer OGG) и энкодер Opus
+     * на самом устройстве.
      */
     fun opusReason(device: DeviceInfo): Int? =
-        if (device.hasOpusEncoder) null else R.string.reason_opus_no_encoder
+        if (device.sdkInt >= 29 && device.hasOpusEncoder) null else R.string.reason_opus_unavailable
 
     /** Файл уже в нужном формате: спрашиваем подтверждение, а не конвертируем молча. */
     fun isAlreadyInFormat(input: InputInfo?, output: String): Boolean {
@@ -213,18 +292,39 @@ object Capabilities {
         }
     }
 
+    /** Водяной знак ставим только туда, где он не портит результат (картинки и PDF). */
+    fun supportsWatermark(tool: ToolKind): Boolean = tool in setOf(
+        ToolKind.IMAGES,
+        ToolKind.PDF_TO_IMAGES,
+        ToolKind.IMAGES_TO_PDF,
+    )
+
+    /** У инструмента есть выбор страниц PDF. */
+    fun supportsPageSelection(tool: ToolKind): Boolean =
+        tool == ToolKind.PDF_TO_IMAGES || tool == ToolKind.OCR
+
+    /** Для OCR «качество» означает точность распознавания, а не битрейт. */
+    fun hasQualityChoice(tool: ToolKind): Boolean = tool != ToolKind.OCR
+
     /** Допустимые MIME для системного пикера документов. */
     fun mimeTypesFor(tool: ToolKind): Array<String> = when (tool) {
         ToolKind.IMAGES -> arrayOf("image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/avif")
         ToolKind.PDF_TO_IMAGES -> arrayOf("application/pdf")
         ToolKind.IMAGES_TO_PDF -> arrayOf("image/jpeg", "image/png", "image/webp")
-        ToolKind.OCR -> arrayOf("image/jpeg", "image/png", "application/pdf")
+        ToolKind.OCR -> arrayOf("image/jpeg", "image/png", "image/heic", "application/pdf")
         ToolKind.AUDIO -> arrayOf("audio/*")
         ToolKind.VIDEO -> arrayOf("video/mp4", "video/quicktime", "video/x-matroska")
     }
 
     /** Инструмент принимает только изображения — кнопка «Из файлов» не нужна. */
     fun isImageOnlyTool(tool: ToolKind): Boolean = tool == ToolKind.IMAGES
+
+    /** У инструмента есть смысл в выборе «Из галереи» (в галерее только картинки). */
+    fun hasGallerySource(tool: ToolKind): Boolean = tool in setOf(
+        ToolKind.IMAGES,
+        ToolKind.IMAGES_TO_PDF,
+        ToolKind.OCR,
+    )
 
     /** Инструмент умеет работать с несколькими файлами сразу. */
     fun supportsMultipleFiles(tool: ToolKind): Boolean = tool == ToolKind.IMAGES_TO_PDF

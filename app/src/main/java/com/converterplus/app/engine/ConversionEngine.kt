@@ -2,9 +2,12 @@ package com.converterplus.app.engine
 
 import android.content.Context
 import com.converterplus.app.R
+import com.converterplus.app.engine.audio.AudioConverter
 import com.converterplus.app.engine.image.ImageConverter
+import com.converterplus.app.engine.ocr.OcrConverter
 import com.converterplus.app.engine.pdf.ImagesToPdf
 import com.converterplus.app.engine.pdf.PdfToImages
+import com.converterplus.app.engine.video.VideoConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -12,7 +15,7 @@ import java.io.File
 import kotlin.coroutines.coroutineContext
 
 /**
- * Фасад конвертации. Единственная точка, из которой воркер и тесты запускают преобразование.
+ * Фасад конвертации. Единственная точка, из которой воркер запускает преобразование.
  *
  * Тяжёлые операции выполняются на [Dispatchers.IO], прогресс отдаётся колбэком,
  * отмена — через отмену корутины ([ensureActive] внутри конвертеров).
@@ -25,7 +28,12 @@ class ConversionEngine(private val context: Context) {
     ): ConversionResult = withContext(Dispatchers.IO) {
         val startedAt = System.currentTimeMillis()
         val outputDir = File(context.cacheDir, "results/${request.id}").apply { mkdirs() }
-        val watermarkText = if (request.watermark) context.getString(R.string.watermark_text) else null
+        // Водяной знак имеет смысл только для изображений и PDF: аудио/видео/TXT не портим.
+        val watermarkText = if (request.watermark && Capabilities.supportsWatermark(request.tool)) {
+            context.getString(R.string.watermark_text)
+        } else {
+            null
+        }
 
         if (!Capabilities.isToolAvailable(request.tool)) {
             throw UnsupportedToolException(request.tool)
@@ -36,7 +44,9 @@ class ConversionEngine(private val context: Context) {
             ToolKind.IMAGES -> convertImages(request, outputDir, watermarkText, onProgress)
             ToolKind.PDF_TO_IMAGES -> convertPdf(request, outputDir, watermarkText, onProgress)
             ToolKind.IMAGES_TO_PDF -> convertToPdf(request, outputDir, watermarkText, onProgress)
-            ToolKind.OCR, ToolKind.AUDIO, ToolKind.VIDEO -> throw UnsupportedToolException(request.tool)
+            ToolKind.AUDIO -> convertAudio(request, outputDir, onProgress)
+            ToolKind.VIDEO -> convertVideo(request, outputDir, onProgress)
+            ToolKind.OCR -> convertOcr(request, outputDir, onProgress)
         }
 
         coroutineContext.ensureActive()
@@ -110,5 +120,75 @@ class ConversionEngine(private val context: Context) {
             onProgress = onProgress,
         )
         return listOf(artifact)
+    }
+
+    private suspend fun convertAudio(
+        request: ConversionRequest,
+        outputDir: File,
+        onProgress: (Int) -> Unit,
+    ): List<OutputArtifact> {
+        val picked = request.inputs.first()
+        val name = FileNameFactory.outputName(picked.displayName, request.outputFormat, emptySet())
+        val target = File(outputDir, name)
+        return listOf(
+            AudioConverter.convert(
+                input = File(picked.localPath),
+                output = target,
+                outputFormat = request.outputFormat,
+                quality = request.quality,
+                onProgress = onProgress,
+            ),
+        )
+    }
+
+    private suspend fun convertVideo(
+        request: ConversionRequest,
+        outputDir: File,
+        onProgress: (Int) -> Unit,
+    ): List<OutputArtifact> {
+        val picked = request.inputs.first()
+        val name = FileNameFactory.outputName(picked.displayName, request.outputFormat, emptySet())
+        val target = File(outputDir, name)
+        return listOf(
+            VideoConverter.convert(
+                context = context,
+                input = File(picked.localPath),
+                output = target,
+                outputFormat = request.outputFormat,
+                quality = request.quality,
+                onProgress = onProgress,
+            ),
+        )
+    }
+
+    private suspend fun convertOcr(
+        request: ConversionRequest,
+        outputDir: File,
+        onProgress: (Int) -> Unit,
+    ): List<OutputArtifact> {
+        val picked = request.inputs.first()
+        val name = FileNameFactory.outputName(picked.displayName, Formats.TXT, emptySet())
+        val target = File(outputDir, name)
+        return listOf(
+            OcrConverter.convert(
+                context = context,
+                inputFile = File(picked.localPath),
+                outputFile = target,
+                selectedPages = request.selectedPages,
+                renderDpi = request.pdfDpi,
+                imageMaxSide = if (request.pdfDpi >= ConversionRequest.DPI_HIGH) {
+                    OCR_IMAGE_SIDE_HIGH
+                } else {
+                    OCR_IMAGE_SIDE
+                },
+                onProgress = onProgress,
+            ),
+        )
+    }
+
+    private companion object {
+        /** Большая сторона картинки, которую отдаём в распознавание. */
+        const val OCR_IMAGE_SIDE = 2_000
+        const val OCR_IMAGE_SIDE_HIGH = 3_200
     }
 }

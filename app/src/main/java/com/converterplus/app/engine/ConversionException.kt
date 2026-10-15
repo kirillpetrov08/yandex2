@@ -26,6 +26,30 @@ class NoPagesSelectedException :
 class UnsupportedToolException(tool: ToolKind) :
     ConversionException(R.string.reason_tool_soon, "инструмент ещё не реализован: ${tool.id}")
 
+class NoAudioTrackException :
+    ConversionException(R.string.err_no_audio_track, "в файле нет звуковой дорожки")
+
+class AudioEncodeException(cause: Throwable? = null) :
+    ConversionException(R.string.err_audio_encode, "не удалось сжать звук", cause)
+
+class OpusUnavailableException(cause: Throwable? = null) :
+    ConversionException(R.string.reason_opus_unavailable, "OGG/Opus недоступен на устройстве", cause)
+
+class VideoUnsupportedException(cause: Throwable? = null) :
+    ConversionException(R.string.err_video_unsupported, "видео не поддерживается устройством", cause)
+
+class VideoDecodeException(cause: Throwable? = null) :
+    ConversionException(R.string.err_video_read, "не удалось прочитать видео", cause)
+
+class OcrDataException(cause: Throwable? = null) :
+    ConversionException(R.string.err_ocr_data, "языковые данные распознавания недоступны", cause)
+
+class OcrInitException(cause: Throwable? = null) :
+    ConversionException(R.string.err_ocr_init, "движок распознавания не запустился", cause)
+
+class OcrNoTextException :
+    ConversionException(R.string.err_ocr_no_text, "текст не найден")
+
 class UnsupportedFormatException(format: String) :
     ConversionException(R.string.reason_format_not_supported, "формат не поддерживается: $format")
 

@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.converterplus.app.Config
 import com.converterplus.app.R
 import com.converterplus.app.data.ThemeMode
+import com.converterplus.app.engine.Formatting
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.ui.components.SectionHeader
 import com.converterplus.app.ui.theme.AppDimens
@@ -137,6 +138,21 @@ fun SettingsScreen(
             )
         }
 
+        Section(text = stringResource(R.string.settings_section_ocr)) {
+            InfoRow(
+                title = stringResource(R.string.settings_ocr_languages),
+                subtitle = stringResource(R.string.settings_ocr_languages_value),
+            )
+            InfoRow(
+                title = stringResource(R.string.settings_ocr_data),
+                subtitle = if (state.ocrReady) {
+                    stringResource(R.string.settings_ocr_data_value, Formatting.formatBytes(state.ocrDataBytes))
+                } else {
+                    stringResource(R.string.settings_ocr_data_pending)
+                },
+            )
+        }
+
         Section(text = stringResource(R.string.settings_section_ads)) {
             ClickableRow(
                 title = stringResource(R.string.settings_remove_ads),
@@ -198,6 +214,25 @@ private fun ClickableRow(title: String, subtitle: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        if (subtitle.isNotBlank()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Строка-справка: только заголовок и пояснение, без нажатия. */
+@Composable
+private fun InfoRow(title: String, subtitle: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Text(text = title, style = MaterialTheme.typography.titleMedium)

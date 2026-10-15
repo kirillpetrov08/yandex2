@@ -100,19 +100,17 @@ GitHub → ваш репозиторий → `Add file` → `Create new file` �
 1. Зарегистрироваться в РСЯ как разработчик мобильных приложений:
    https://partner.yandex.ru → «Мобильная реклама».
 2. Создать приложение, указать пакет `com.converterplus.app` и ссылку на магазин.
-3. Создать **три** блока и получить ID вида `R-M-XXXXXXX-Y`:
-   - баннер (320×50 / адаптивный);
-   - межстраничная реклама;
-   - rewarded (реклама за вознаграждение).
-4. Вписать ID в `gradle.properties`:
+3. Создать **три** блока: баннер, межстраничная реклама, rewarded (реклама за вознаграждение).
+   Для приложения «конвертатор» они уже созданы, ID вписаны в проект:
    ```properties
    ads.testMode=false
-   ads.bannerUnitId=R-M-XXXXXXX-1
-   ads.interstitialUnitId=R-M-XXXXXXX-2
-   ads.rewardedUnitId=R-M-XXXXXXX-3
+   ads.bannerUnitId=R-M-20230616-2
+   ads.interstitialUnitId=R-M-20230616-4
+   ads.rewardedUnitId=R-M-20230616-7
    ```
-   Если `ads.testMode=false`, а ID остались демо-версиями, сборка **упадёт** с понятным
-   сообщением — это защита от релиза без дохода.
+   Менять эти строки нужно только если создадите новые блоки. Если `ads.testMode=false`,
+   а ID остались демо-версиями или не похожи на `R-M-XXXXXXX-Y`, сборка **упадёт** с понятным
+   сообщением — это защита от релиза без дохода. Подробно: `docs/ADS_SETUP.md`.
 5. Положить `app-ads.txt` (шаблон: `docs/app-ads.txt`) в корень домена разработчика:
    `https://ваш-домен/app-ads.txt`. Без него показы могут не тарифицироваться.
 6. Пройти модерацию приложения в РСЯ. До модерации показы идут в тестовом режиме без дохода.
@@ -125,11 +123,14 @@ GitHub → ваш репозиторий → `Add file` → `Create new file` �
 
 ## 5. Политика конфиденциальности
 
-1. Заменить в `Config.kt` и в текстах магазинов `converterplus.example.com` на свой домен
-   и `support.converterplus@gmail.com` на свою почту.
-2. Опубликовать `docs/privacy_policy.html` по адресу
-   `https://ваш-домен/privacy_policy.html` (GitHub Pages, Netlify, любой хостинг).
-   Страница должна открываться без авторизации.
+1. Заменить `support.converterplus@gmail.com` в `Config.kt` и в `docs/privacy_policy.html`
+   на свою почту.
+2. Опубликовать `docs/privacy_policy.html`. Проще всего — GitHub Pages: репозиторий →
+   Settings → Pages → Source «Deploy from a branch», Branch `main`, Folder `/docs` → Save.
+   Тогда страница открывается по адресу
+   `https://kirillpetrov08.github.io/yandex2/privacy_policy.html` — он уже вписан
+   в `Config.PRIVACY_POLICY_URL`. Любой другой хостинг тоже подойдёт: главное, чтобы ссылка
+   открывалась без авторизации, и в `Config.kt` был именно этот адрес.
 
 ---
 

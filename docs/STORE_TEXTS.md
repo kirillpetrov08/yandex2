@@ -57,7 +57,7 @@ JPG, PNG, WEBP и PDF без интернета. Файлы не покидаю�
 ПРИВАТНОСТЬ
 Файлы обрабатываются только на вашем устройстве и не отправляются на сервер.
 Приложению не нужны разрешения на хранилище, камеру, микрофон и геолокацию.
-Политика конфиденциальности: https://converterplus.example.com/privacy_policy.html
+Политика конфиденциальности: https://kirillpetrov08.github.io/yandex2/privacy_policy.html
 
 СВЯЗЬ
 support.converterplus@gmail.com
@@ -122,7 +122,7 @@ support.converterplus@gmail.com
 МОНЕТИЗАЦИЯ
 Только реклама Яндекс РСЯ (баннер, межстраничная, rewarded). Покупок и подписок нет.
 
-Политика конфиденциальности: https://converterplus.example.com/privacy_policy.html
+Политика конфиденциальности: https://kirillpetrov08.github.io/yandex2/privacy_policy.html
 Поддержка: support.converterplus@gmail.com
 ```
 

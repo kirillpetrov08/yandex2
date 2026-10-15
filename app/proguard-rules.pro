@@ -14,6 +14,11 @@
 -keepattributes *Annotation*, InnerClasses, Signature
 -dontwarn org.jetbrains.annotations.**
 
-# --- Tesseract4Android (этап 4 — OCR) ---
--keep class net.sourceforge.tesstwo.** { *; }
--dontwarn net.sourceforge.tesstwo.**
+# --- Tesseract4Android (распознавание текста) ---
+# Все вызовы идут через JNI: без этих правил R8 переименует классы и нативный движок не найдёт их.
+-keep class com.googlecode.tesseract.android.** { *; }
+-dontwarn com.googlecode.tesseract.android.**
+
+# --- media3 Transformer (видео) ---
+-keep class androidx.media3.** { *; }
+-dontwarn androidx.media3.**

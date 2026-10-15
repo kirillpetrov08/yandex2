@@ -20,18 +20,23 @@
    имя `.github/workflows/android.yml` → вставить содержимое `docs/ci-android.yml`):
    push этого пути от бота отклоняется, у GitHub App нет права `workflows`.
 
-4. **Завести блоки в РСЯ** (https://partner.yandex.ru) и вписать три реальных ID
-   вида `R-M-XXXXXXX-Y` в `gradle.properties`, там же поставить `ads.testMode=false`.
-   Положить `docs/app-ads.txt` в корень своего домена.
-   Реклама начнёт приносить доход только после того, как приложение получит в РСЯ
-   статус «Активно» (модерация до 2 дней) — порядок в `docs/APK_RELEASE.md`.
+4. **Проверить блоки РСЯ** (https://partner.yandex.ru): для приложения «конвертатор» уже
+   созданы баннер, межстраничная и rewarded, а их ID (`R-M-20230616-2`, `-4`, `-7`) вписаны
+   в `gradle.properties` вместе с `ads.testMode=false` — вписывать ничего не нужно.
+   Останется положить `docs/app-ads.txt` на сайт разработчика (включить GitHub Pages:
+   Settings → Pages → Deploy from a branch, main, /docs) и после публикации в RuStore
+   добавить ссылку на карточку в кабинете РСЯ.
+   Доход начнётся только после статуса «Активно» (модерация до 2 дней) — `docs/APK_RELEASE.md`.
 
-5. **Заменить контакты на свои** в трёх местах:
-   `app/src/main/java/com/converterplus/app/Config.kt` (почта, домен, ссылка на магазин),
-   `docs/privacy_policy.html`, тексты в `docs/STORE_TEXTS.md`.
+5. **Заменить контакты на свои**: почту `support.converterplus@gmail.com` в
+   `app/src/main/java/com/converterplus/app/Config.kt`, `docs/privacy_policy.html`,
+   `docs/STORE_TEXTS.md`. Там же — ссылка на карточку магазина (`Config.STORE_URL`)
+   после публикации.
 
-6. **Опубликовать политику конфиденциальности** — залить `docs/privacy_policy.html`
-   на свой домен так, чтобы открывалась по адресу из `Config.PRIVACY_POLICY_URL`.
+6. **Включить GitHub Pages** (Settings → Pages → Deploy from a branch → main → /docs):
+   после этого политика откроется по адресу из `Config.PRIVACY_POLICY_URL`, а `app-ads.txt`
+   — по адресу домена разработчика для РСЯ. Если хостите сами — залейте эти два файла
+   на свой домен и поправьте константы в `Config.kt`.
 
 7. **Собрать релиз**: дождаться зелёного прогона GitHub Actions, скачать артефакт
    `build-outputs`. Для Google Play взять `app/build/outputs/bundle/release/*.aab`,

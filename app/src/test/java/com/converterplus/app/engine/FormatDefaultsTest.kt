@@ -1,8 +1,8 @@
 package com.converterplus.app.engine
 
-import com.converterplus.app.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,7 +24,7 @@ class FormatDefaultsTest {
     }
 
     @Test
-    fun `default formats for future tools are already fixed`() {
+    fun `default format is defined for every tool`() {
         assertEquals(Formats.TXT, Capabilities.defaultFormat(ToolKind.OCR))
         assertEquals(Formats.M4A, Capabilities.defaultFormat(ToolKind.AUDIO))
         assertEquals(Formats.MP4, Capabilities.defaultFormat(ToolKind.VIDEO))
@@ -68,15 +68,11 @@ class FormatDefaultsTest {
     }
 
     @Test
-    fun `available tools are exactly the three implemented ones`() {
-        assertEquals(
-            setOf(ToolKind.IMAGES, ToolKind.PDF_TO_IMAGES, ToolKind.IMAGES_TO_PDF),
-            Capabilities.AVAILABLE_TOOLS,
-        )
-    }
-
-    @Test
-    fun `unavailable tool reason is a real string`() {
-        assertEquals(R.string.reason_tool_soon, Capabilities.toolUnavailableReason(ToolKind.VIDEO))
+    fun `all six tools are available`() {
+        assertEquals(ToolKind.entries.toSet(), Capabilities.AVAILABLE_TOOLS)
+        ToolKind.entries.forEach { tool ->
+            assertTrue("инструмент ${tool.id} должен быть доступен", Capabilities.isToolAvailable(tool))
+            assertNull(Capabilities.toolUnavailableReason(tool))
+        }
     }
 }

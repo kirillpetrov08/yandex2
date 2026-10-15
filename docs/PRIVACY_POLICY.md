@@ -82,7 +82,8 @@ https://yandex.ru/legal/confidential/ и https://yandex.ru/legal/mobile_ads_term
 ## 8. Изменения Политики
 
 Оператор может обновить Политику. Актуальная версия всегда доступна по адресу
-`https://converterplus.example.com/privacy_policy.html`, дата обновления указана в начале.
+`https://kirillpetrov08.github.io/yandex2/privacy_policy.html` (хостинг включается в
+Settings → Pages, см. `docs/ADS_SETUP.md`, раздел 3.3), дата обновления указана в начале.
 
 ## 9. Контакты и удаление данных
 

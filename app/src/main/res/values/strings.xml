@@ -108,13 +108,15 @@
     <string name="hint_m4a">компактно и качественно</string>
     <string name="hint_ogg">свободный формат</string>
     <string name="hint_mp4">совместимо везде</string>
+    <string name="format_audio_only">Только звук (M4A)</string>
+    <string name="hint_audio_only">взять звук из видео</string>
 
     <!-- Причины недоступности форматов -->
     <string name="reason_heic_needs_android9">HEIC открывается только на Android 9 и новее</string>
     <string name="reason_avif_needs_android12">AVIF открывается только на Android 12 и новее</string>
     <string name="reason_format_not_supported">Этот формат пока не поддерживается</string>
     <string name="reason_output_not_supported">Такой выходной формат недоступен для этого инструмента</string>
-    <string name="reason_opus_no_encoder">Ваше устройство не умеет создавать OGG/Opus</string>
+    <string name="reason_opus_unavailable">OGG/Opus недоступен: нужен Android 10 и поддержка кодека устройством</string>
     <string name="reason_container_not_supported">Не удалось открыть файл: этот контейнер не поддерживается</string>
     <string name="reason_pdf_password">Файл защищён паролем</string>
     <string name="reason_tool_soon">Инструмент появится в ближайшем обновлении</string>
@@ -129,6 +131,27 @@
     <string name="err_cancelled">Конвертация отменена</string>
     <string name="err_pick_failed">Не удалось прочитать файл. Попробуйте выбрать другой</string>
     <string name="err_no_pages_selected">Выберите хотя бы одну страницу</string>
+    <string name="err_no_audio_track">В этом файле нет звуковой дорожки</string>
+    <string name="err_audio_encode">Не удалось сжать звук на этом устройстве. Попробуйте другой формат</string>
+    <string name="err_video_unsupported">Этот формат видео не поддерживается устройством. Попробуйте другой файл</string>
+    <string name="err_video_read">Не удалось прочитать видео. Возможно, файл повреждён</string>
+    <string name="err_ocr_data">Не удалось подготовить данные для распознавания. Попробуйте переустановить приложение</string>
+    <string name="err_ocr_init">Не удалось запустить распознавание текста. Попробуйте ещё раз</string>
+    <string name="err_ocr_no_text">Текст не найден. Попробуйте более чёткое фото или другой файл</string>
+
+    <!-- ============ Аудио, видео, распознавание текста ============ -->
+    <string name="tool_audio_duration">Длительность: %1$s</string>
+    <string name="tool_pages_ocr">Страницы для распознавания</string>
+    <string name="tool_ocr_precision_title">Точное распознавание</string>
+    <string name="tool_ocr_precision_hint">Обычная точность подходит для документов и скриншотов. Точная — для мелкого текста и фото под углом.</string>
+    <string name="tool_ocr_precision_button">Посмотреть короткое видео</string>
+    <string name="tool_ocr_precision_on">Точное распознавание включено</string>
+    <string name="settings_ocr_languages">Языки распознавания</string>
+    <string name="settings_ocr_languages_value">Русский и английский</string>
+    <string name="settings_ocr_data">Данные распознавания</string>
+    <string name="settings_ocr_data_value">Встроены в приложение: %1$s</string>
+    <string name="settings_ocr_data_pending">Подготовятся при первом распознавании</string>
+    <string name="cd_audio_preview">Превью аудиофайла</string>
 
     <!-- ============ Диалоги ============ -->
     <string name="dialog_same_format_title">Файл уже в этом формате</string>
@@ -163,6 +186,7 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_section_files">Файлы</string>
     <string name="settings_section_appearance">Внешний вид</string>
+    <string name="settings_section_ocr">Распознавание текста</string>
     <string name="settings_section_ads">Реклама</string>
     <string name="settings_section_about">О приложении</string>
 
