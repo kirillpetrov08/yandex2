@@ -1,21 +1,22 @@
 # Что делает человек руками — 8 пунктов
 
+Подробная версия каждого пункта с точными командами и значениями полей — `docs/STEP_BY_STEP.md`.
+
 1. **Открыть проект в Android Studio** и дождаться Gradle Sync
    (нужен установленный Android SDK с платформой Android 36).
    Проверка: `./gradlew testDebugUnitTest` и `./gradlew assembleDebug` проходят без ошибок.
 
-2. **Создать два ключа подписи** один раз и сохранить каждый в двух местах:
+2. **Создать ключ подписи приложения** один раз и сохранить файл с паролем в двух местах:
    ```bash
-   # ключ загрузки — им CI подписывает AAB (уходит в секреты GitHub)
-   keytool -genkeypair -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000
-   # ключ подписи приложения — уходит в RuStore и Google Play, в CI не попадает
    keytool -genkeypair -v -keystore app-signing.keystore -alias sign -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
    ```
-   Зачем два и что с ними делать — `docs/RUSTORE_SIGNING.md`.
+   Этим ключом подписывается APK для RuStore. Второй ключ (ключ загрузки `upload-keystore.jks`)
+   нужен **только** если будете загружать AAB (Google Play или RuStore через окно PEPK) —
+   тогда порядок в `docs/RUSTORE_SIGNING.md`.
 
-3. **Добавить секреты в GitHub** (Settings → Secrets → Actions):
-   `KEYSTORE_BASE64` (`openssl base64 -A -in upload-keystore.jks`),
-   `KEYSTORE_PASSWORD`, `KEY_ALIAS` (= `upload`), `KEY_PASSWORD`.
+3. **Добавить секреты в GitHub** (Settings → Secrets and variables → Actions):
+   `KEYSTORE_BASE64` (base64 от **app-signing.keystore** — тогда CI-сборка APK тоже годится
+   для RuStore), `KEYSTORE_PASSWORD`, `KEY_ALIAS` (= `sign`), `KEY_PASSWORD`.
    Затем создать воркфлоу руками через веб-интерфейс GitHub (Add file → Create new file →
    имя `.github/workflows/android.yml` → вставить содержимое `docs/ci-android.yml`):
    push этого пути от бота отклоняется, у GitHub App нет права `workflows`.
