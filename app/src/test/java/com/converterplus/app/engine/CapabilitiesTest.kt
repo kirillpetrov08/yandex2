@@ -172,9 +172,14 @@ class CapabilitiesTest {
 
     @Test
     fun `audio formats depend on input and device`() {
-        val options = Capabilities.optionsFor(ToolKind.AUDIO, audio(), api31)
-        assertEquals(listOf(Formats.M4A, Formats.WAV, Formats.OGG), options.map { it.id })
-        assertTrue(options.all { it.enabled })
+        // Порядок форматов одинаков всегда; доступность OGG зависит от энкодера Opus.
+        val withOpus = Capabilities.optionsFor(ToolKind.AUDIO, audio(), api31.copy(hasOpusEncoder = true))
+        assertEquals(listOf(Formats.M4A, Formats.WAV, Formats.OGG), withOpus.map { it.id })
+        assertTrue(withOpus.all { it.enabled })
+
+        val withoutOpus = Capabilities.optionsFor(ToolKind.AUDIO, audio(), api31)
+        assertEquals(listOf(Formats.M4A, Formats.WAV, Formats.OGG), withoutOpus.map { it.id })
+        assertEquals(listOf(Formats.M4A, Formats.WAV), withoutOpus.filter { it.enabled }.map { it.id })
     }
 
     @Test
