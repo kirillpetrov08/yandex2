@@ -44,3 +44,5 @@
    → загрузить `rustore-out/pepk_out.zip` и `rustore-out/uploadcert.pem`, и только потом сам AAB
    (`docs/RUSTORE_SIGNING.md`). Дальше тексты из `docs/STORE_TEXTS.md` (Google Play и RuStore),
    «содержит рекламу — да», «покупок нет», скриншоты, отправка на модерацию.
+   Полный порядок для RuStore — в `docs/RUSTORE_DEPLOY.md` (если грузите APK, а не AAB,
+   файл подписывается вашим ключом приложения, окно PEPK не нужно).
