@@ -200,3 +200,34 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
 }
+
+// ---------------------------------------------------------------------------
+// Готовый APK без секретов ключа. AGP называет неподписанный релизный APK
+// «app-release-unsigned.apk», а workflow (шаг «Проверка релизного APK» и артефакт
+// release-apk) ждёт «app-release.apk». Поэтому копируем файл под обычным именем:
+// так артефакт с APK появляется и до настройки подписи (docs/CI_BUILD.md, шаг B),
+// и сборку можно сразу поставить на телефон. Когда секреты KEYSTORE_* заданы,
+// AGP создаёт подписанный app-release.apk сам, и этот шаг ничего не делает —
+// неподписанного файла рядом уже нет.
+// ---------------------------------------------------------------------------
+val aliasUnsignedReleaseApk by tasks.registering {
+    description = "Копирует app-release-unsigned.apk в app-release.apk, если подписи нет"
+    group = "build"
+    doLast {
+        val dir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
+        val unsigned = dir.resolve("app-release-unsigned.apk")
+        val plain = dir.resolve("app-release.apk")
+        if (unsigned.isFile && !plain.isFile) {
+            unsigned.copyTo(plain, overwrite = true)
+            logger.lifecycle(
+                "Неподписанный релизный APK доступен как ${plain.name}: " +
+                    "для проверки на телефоне годится, для RuStore нужен подписанный " +
+                    "(секреты KEYSTORE_*, docs/CI_BUILD.md, шаг B).",
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy(aliasUnsignedReleaseApk)
+}

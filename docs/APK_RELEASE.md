@@ -121,8 +121,11 @@ gradlew.bat clean assembleRelease
 ```
 
 Результат: `app\build\outputs\apk\release\app-release.apk`.
-Без секретов ключа файл называется `app-release-unsigned.apk` — он ставится на телефон
-для проверки, но в RuStore его не примут (там нужна подпись приложения).
+Без секретов ключа файл неподписан: AGP кладёт его как `app-release-unsigned.apk`, а сборка
+дополнительно копирует под обычным именем `app-release.apk` (см. `aliasUnsignedReleaseApk`
+в `app/build.gradle.kts`) — так артефакт с APK появляется и до настройки подписи.
+Такой APK ставится на телефон для проверки, но RuStore его не примет: для магазина
+нужны четыре секрета (`docs/CI_BUILD.md`, шаг B).
 
 `KEYSTORE_FILE` отсчитывается от корня проекта; можно указать и полный путь.
 Если файла ключа нет — см. раздел 5.
