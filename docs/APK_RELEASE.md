@@ -121,6 +121,8 @@ gradlew.bat clean assembleRelease
 ```
 
 Результат: `app\build\outputs\apk\release\app-release.apk`.
+Без секретов ключа файл называется `app-release-unsigned.apk` — он ставится на телефон
+для проверки, но в RuStore его не примут (там нужна подпись приложения).
 
 `KEYSTORE_FILE` отсчитывается от корня проекта; можно указать и полный путь.
 Если файла ключа нет — см. раздел 5.

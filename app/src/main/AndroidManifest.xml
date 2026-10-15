@@ -60,6 +60,20 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+
+        <!-- ConverterApp — Configuration.Provider, то есть WorkManager инициализируется
+             по требованию. Штатный инициализатор из androidx.startup при этом отключается:
+             иначе он стартует со своей конфигурацией и наша (уровень логирования) не применяется. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
     </application>
 
 </manifest>
