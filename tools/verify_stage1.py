@@ -479,13 +479,31 @@ def gh_error(title: str, message: str) -> None:
 
 
 def pick_error_lines(lines: list[str]) -> list[str]:
-    """Оставляет строки, по которым видно причину падения (файл, строка, текст)."""
+    """Оставляет строки, по которым видно причину падения (файл, строка, текст).
+
+    Компилятор Kotlin печатает многострочные сообщения (например, список
+    нереализованных методов интерфейса), поэтому строки с продолжением —
+    те, что начинаются с отступа, — забираем вместе с первой строкой.
+    """
     picked: list[str] = []
-    for line in lines:
-        for pattern in ERROR_LINE_PATTERNS:
-            if pattern.search(line):
-                picked.append(line.rstrip())
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        index += 1
+        matched = any(pattern.search(line) for pattern in ERROR_LINE_PATTERNS)
+        if not matched:
+            continue
+        picked.append(line.rstrip())
+        if not line.rstrip().endswith(":"):
+            continue
+        for _ in range(8):
+            if index >= len(lines):
                 break
+            continuation = lines[index]
+            if not continuation[:1].isspace():
+                break
+            picked.append(continuation.rstrip())
+            index += 1
     return picked
 
 

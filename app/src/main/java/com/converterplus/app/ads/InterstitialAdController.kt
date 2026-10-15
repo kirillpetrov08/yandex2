@@ -9,6 +9,7 @@ import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
 import com.yandex.mobile.ads.common.AdError
 import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdRequestError
+import com.yandex.mobile.ads.common.ImpressionData
 
 /**
  * Межстраничная реклама.
@@ -66,6 +67,10 @@ class InterstitialAdController(private val unitId: String) {
 
         ad.setAdEventListener(
             object : InterstitialAdEventListener {
+                override fun onAdShown() {
+                    AdsLog.info("interstitial", "показана")
+                }
+
                 override fun onAdDismissed() {
                     AdsLog.info("interstitial", "закрыта")
                     onFinished()
@@ -74,6 +79,14 @@ class InterstitialAdController(private val unitId: String) {
                 override fun onAdFailedToShow(adError: AdError) {
                     AdsLog.warn("interstitial", null, adError.description.orEmpty())
                     onFinished()
+                }
+
+                override fun onAdClicked() {
+                    AdsLog.info("interstitial", "клик")
+                }
+
+                override fun onAdImpression(data: ImpressionData?) {
+                    AdsLog.info("interstitial", "показ засчитан")
                 }
             },
         )
