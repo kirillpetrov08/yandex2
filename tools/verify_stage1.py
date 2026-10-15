@@ -395,6 +395,10 @@ def check_gradle() -> None:
         "gradlew",
         "app/build.gradle.kts",
         "app/proguard-rules.pro",
+        # Документы и скрипты публикации — часть поставки, не удалять.
+        "docs/RUSTORE_SIGNING.md",
+        "tools/rustore-signature.cmd",
+        "tools/rustore-signature.sh",
     ]:
         if not os.path.exists(os.path.join(ROOT, required)):
             errors.append(f"нет обязательного файла: {required}")

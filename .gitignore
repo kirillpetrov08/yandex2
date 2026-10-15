@@ -14,6 +14,13 @@ captures/
 *.keystore
 keystore.properties
 upload-keystore.jks
+app-signing.keystore
+
+# Результаты подготовки подписи для RuStore (см. docs/RUSTORE_SIGNING.md)
+*.pem
+pepk.jar
+pepk_out.zip
+rustore-out/
 
 # Секреты CI
 *.env

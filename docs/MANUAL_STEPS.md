@@ -4,10 +4,14 @@
    (нужен установленный Android SDK с платформой Android 36).
    Проверка: `./gradlew testDebugUnitTest` и `./gradlew assembleDebug` проходят без ошибок.
 
-2. **Создать ключ подписи** один раз и сохранить его в двух местах:
+2. **Создать два ключа подписи** один раз и сохранить каждый в двух местах:
    ```bash
+   # ключ загрузки — им CI подписывает AAB (уходит в секреты GitHub)
    keytool -genkeypair -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 4096 -validity 10000
+   # ключ подписи приложения — уходит в RuStore и Google Play, в CI не попадает
+   keytool -genkeypair -v -keystore app-signing.keystore -alias sign -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
    ```
+   Зачем два и что с ними делать — `docs/RUSTORE_SIGNING.md`.
 
 3. **Добавить секреты в GitHub** (Settings → Secrets → Actions):
    `KEYSTORE_BASE64` (`openssl base64 -A -in upload-keystore.jks`),
@@ -30,6 +34,8 @@
 7. **Собрать релиз**: дождаться зелёного прогона GitHub Actions, скачать артефакт
    `build-outputs`, взять файл `app/build/outputs/bundle/release/*.aab`.
 
-8. **Загрузить AAB в магазины и заполнить формы** текстами из `docs/STORE_TEXTS.md`
-   (Google Play и RuStore), указать «содержит рекламу — да», «покупок нет»,
-   приложить скриншоты и отправить на модерацию.
+8. **Загрузить AAB в магазины и заполнить формы.** В RuStore сначала окно
+   «Ключ подписи приложения»: `tools\rustore-signature.cmd --encryption-key=<ключ из окна>`
+   → загрузить `rustore-out/pepk_out.zip` и `rustore-out/uploadcert.pem`, и только потом сам AAB
+   (`docs/RUSTORE_SIGNING.md`). Дальше тексты из `docs/STORE_TEXTS.md` (Google Play и RuStore),
+   «содержит рекламу — да», «покупок нет», скриншоты, отправка на модерацию.

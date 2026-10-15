@@ -129,7 +129,8 @@ python3 tools/verify_stage1.py
 
 ## Публикация
 
-- `docs/DEPLOY.md` — пошаговая инструкция (ключ, секреты, РСЯ, магазины).
+- `docs/DEPLOY.md` — пошаговая инструкция (ключи, секреты, РСЯ, магазины).
+- `docs/RUSTORE_SIGNING.md` — подпись для RuStore: два ключа, PEPK, разбор ошибок.
 - `docs/MANUAL_STEPS.md` — 8 пунктов, которые делает человек.
 - `docs/STORE_TEXTS.md` — тексты для Google Play и RuStore (только реализованное).
 - `docs/PRIVACY_POLICY.md`, `docs/privacy_policy.html` — политика конфиденциальности.
