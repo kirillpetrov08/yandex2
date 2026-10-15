@@ -137,6 +137,7 @@ python3 tools/verify_stage1.py
 - `docs/RUSTORE_SIGNING.md` — подпись для RuStore: два ключа, PEPK, разбор ошибок.
 - `docs/RUSTORE_DEPLOY.md` — публикация в RuStore целиком: аккаунт, загрузка APK, карточка,
   декларации, модерация, обновления.
+- `docs/ADS_SETUP.md` — какие три блока РСЯ создавать, куда вписывать их ID и как собрать APK.
 - `docs/MANUAL_STEPS.md` — 8 пунктов, которые делает человек.
 - `docs/STORE_TEXTS.md` — тексты для Google Play и RuStore (только реализованное).
 - `docs/PRIVACY_POLICY.md`, `docs/privacy_policy.html` — политика конфиденциальности.
