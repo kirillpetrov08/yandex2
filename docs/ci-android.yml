@@ -1,0 +1,239 @@
+name: Android CI
+
+# ОДИН воркфлоу делает всё: статические проверки, тесты, debug-сборку,
+# релизный APK для RuStore и AAB, а затем проверяет то, что легко испортить:
+#   • подпись APK — тем самым ключом, который вы загрузили в секреты;
+#   • что внутри APK лежат настоящие ID блоков РСЯ, а не демо-строки;
+#   • что в APK нет запрещённых проектом разрешений (хранилище, камера, микрофон).
+#
+# Секреты репозитория (Settings → Secrets and variables → Actions):
+#   KEYSTORE_BASE64     — base64 от app-signing.keystore (ключ подписи приложения)
+#   KEYSTORE_PASSWORD   — пароль хранилища
+#   KEY_ALIAS           — sign
+#   KEY_PASSWORD        — пароль ключа (для PKCS12 совпадает с паролем хранилища)
+# Подробно, с командами: docs/CI_BUILD.md
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'versionCode для этой сборки (пусто — как в app/build.gradle.kts)'
+        required: false
+        default: ''
+      version_name:
+        description: 'versionName, например 1.0.1 (пусто — как в app/build.gradle.kts)'
+        required: false
+        default: ''
+
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Сборка и проверки
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Код
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Именно @v4: в @v3 дефолтный пакет 'tools' удалён из репозитория SDK и шаг падает
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Платформа и build-tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Кэш Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Проверка настроек рекламы
+        run: |
+          set -euo pipefail
+          echo "Проверяю gradle.properties"
+          test_mode=$(sed -n 's/^ads\.testMode=//p' gradle.properties | tail -n1 | tr -d '\r')
+          echo "ads.testMode=$test_mode"
+          if [ "$test_mode" != "false" ]; then
+            echo "::error title=Включён тестовый режим рекламы::в gradle.properties ads.testMode=$test_mode. Для релиза нужно ads.testMode=false."
+            exit 1
+          fi
+          broken=0
+          for key in banner interstitial rewarded; do
+            unit_id=$(sed -n "s/^ads\.${key}UnitId=//p" gradle.properties | tail -n1 | tr -d '\r')
+            if [[ "$unit_id" =~ ^R-M-[0-9]{4,}-[0-9]{1,3}$ ]]; then
+              echo "ads.${key}UnitId=$unit_id — ок"
+            else
+              echo "::error title=Неверный ID блока::ads.${key}UnitId=$unit_id — ожидается вид R-M-XXXXXXX-Y"
+              broken=1
+            fi
+          done
+          [ "$broken" = "0" ]
+
+      - name: Статические проверки проекта
+        run: python3 tools/verify_stage1.py
+
+      - name: Ключ подписи
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "::warning title=Нет ключа подписи::Секрет KEYSTORE_BASE64 пуст. APK и AAB соберутся без подписи, в RuStore такой файл не примут. См. docs/CI_BUILD.md, шаг B."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > app-signing.keystore
+          echo "KEYSTORE_FILE=app-signing.keystore" >> "$GITHUB_ENV"
+          echo "Ключ восстановлен: app-signing.keystore, $(stat -c%s app-signing.keystore) байт"
+
+      - name: Тесты
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Сборка (debug + release APK + AAB)
+        env:
+          VERSION_CODE: ${{ inputs.version_code }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleDebug assembleRelease bundleRelease --stacktrace
+
+      - name: Проверка релизного APK
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          if [ ! -f "$APK" ]; then
+            echo "::error title=APK не найден::Сборка не создала $APK"
+            exit 1
+          fi
+          echo "APK: $APK ($(du -h "$APK" | cut -f1))"
+          sha256sum "$APK"
+
+          APKSIGNER=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n1 || true)
+          if [ -n "$APKSIGNER" ]; then
+            if [ "${KEYSTORE_FILE:-}" != "" ]; then
+              if "$APKSIGNER" verify "$APK" > /dev/null 2>&1; then
+                echo "Подпись APK: OK"
+                "$APKSIGNER" verify --print-certs "$APK" | grep -E "DN:|SHA-256" || true
+                "$APKSIGNER" verify --print-certs "$APK" | sed -n 's/.*SHA-256 digest: //p' | head -n1 > /tmp/signer-sha.txt || true
+              else
+                echo "::error title=APK не подписан::Ключ был передан, но подпись не подтвердилась. Проверьте KEYSTORE_PASSWORD, KEY_ALIAS и KEY_PASSWORD."
+                exit 1
+              fi
+            else
+              echo "::warning title=APK без подписи::Секреты KEYSTORE_* не заданы — такой APK магазин не примет."
+            fi
+          else
+            echo "::warning::apksigner не найден, подпись не проверил"
+          fi
+
+          # Настоящие ID блоков РСЯ должны лежать в DEX, иначе в магазин уедет демо-реклама
+          mkdir -p /tmp/dex
+          rm -f /tmp/dex/*.dex
+          unzip -o -q "$APK" 'classes*.dex' -d /tmp/dex
+          missing=0
+          while read -r unit_id; do
+            [ -n "$unit_id" ] || continue
+            if grep -q -a -- "$unit_id" /tmp/dex/classes*.dex; then
+              echo "ID в APK: $unit_id — ок"
+            else
+              echo "::error title=ID блока не попал в APK::Ожидался $unit_id, но в классах его нет"
+              missing=1
+            fi
+          done < <(sed -n 's/^ads\.\(banner\|interstitial\|rewarded\)UnitId=//p' gradle.properties | tr -d '\r')
+          [ "$missing" = "0" ]
+
+          # Разрешения: ничего сверх INTERNET / ACCESS_NETWORK_STATE / POST_NOTIFICATIONS / FOREGROUND_SERVICE*
+          AAPT2=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n1 || true)
+          if [ -n "$AAPT2" ]; then
+            "$AAPT2" dump permissions "$APK" > /tmp/perms.txt 2>/dev/null || true
+            if [ -s /tmp/perms.txt ]; then
+              echo "--- Разрешения APK ---"
+              cat /tmp/perms.txt
+              if grep -Eq 'STORAGE|MANAGE_EXTERNAL_STORAGE|CAMERA|RECORD_AUDIO' /tmp/perms.txt; then
+                echo "::error title=Лишние разрешения::В APK есть доступ к хранилищу, камере или микрофону. Проект таких разрешений не запрашивает."
+                exit 1
+              fi
+              echo "Лишних разрешений нет"
+            fi
+          fi
+
+          BADGING=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -n1 || true)
+          if [ -n "$BADGING" ]; then
+            BADGING_LINE=$("$BADGING" dump badging "$APK" 2>/dev/null | head -n1 || true)
+            VERSION_LINE=$(printf '%s' "$BADGING_LINE" | grep -o "versionCode='[0-9]*' versionName='[^']*'" || true)
+            echo "Версия в APK: ${VERSION_LINE:-не определилась}"
+            echo "VERSION_LINE=${VERSION_LINE}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Итог сборки
+        if: always()
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          {
+            echo "## Сборка «Конвертер+»"
+            echo ""
+            echo "| Что | Значение |"
+            echo "|---|---|"
+            echo "| Ветка | \`${GITHUB_REF_NAME}\` |"
+            echo "| Коммит | \`${GITHUB_SHA:0:7}\` |"
+            echo "| Версия | ${VERSION_LINE:-по коду проекта} |"
+            if [ -f "$APK" ]; then
+              echo "| Размер APK | $(du -h "$APK" | cut -f1) |"
+              echo "| SHA-256 APK | \`$(sha256sum "$APK" | cut -d' ' -f1)\` |"
+            fi
+            if [ -s /tmp/signer-sha.txt ]; then
+              echo "| Отпечаток ключа | \`$(cat /tmp/signer-sha.txt)\` |"
+            fi
+            if [ "${KEYSTORE_FILE:-}" = "" ]; then
+              echo "| Подпись | ⚠️ не заданы секреты KEYSTORE_* |"
+            else
+              echo "| Подпись | ключом подписи приложения |"
+            fi
+            echo ""
+            echo "### Что скачать"
+            echo ""
+            echo "1. Внизу этой страницы в блоке **Artifacts** скачайте \`release-apk\`."
+            echo "2. Внутри — \`app-release.apk\` (для RuStore) и \`app-debug.apk\` (для проверок)."
+            echo ""
+            echo "### Что дальше"
+            echo ""
+            echo "Порядок публикации: \`docs/CI_BUILD.md\` → потом \`docs/RUSTORE_DEPLOY.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Артефакт с готовыми APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Все результаты сборки (APK, AAB, отчёты)
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-outputs
+          path: app/build/outputs
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Отчёт тестов
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+          retention-days: 7

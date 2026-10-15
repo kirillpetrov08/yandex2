@@ -1,0 +1,39 @@
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.cxx/
+
+# Ключи подписи — никогда не коммитить
+*.jks
+*.keystore
+keystore.properties
+upload-keystore.jks
+app-signing.keystore
+
+# Результаты подготовки подписи для RuStore (см. docs/RUSTORE_SIGNING.md)
+*.pem
+pepk.jar
+pepk_out.zip
+rustore-out/
+
+# Секреты CI
+*.env
+
+# ОС
+.DS_Store
+Thumbs.db
+
+# Данные OCR (rus + eng, ~7,6 МБ) входят в сборку и лежат в репозитории:
+# без них распознавание текста не работает. Где их взять заново — docs/DEPLOY.md
+
+# CI-файл создаётся вручную через веб-интерфейс GitHub (см. docs/DEPLOY.md, шаг 3):
+# у бота нет права workflows. Копия содержимого лежит в docs/ci-android.yml.
+.github/workflows/
+__pycache__/
+*.pyc
