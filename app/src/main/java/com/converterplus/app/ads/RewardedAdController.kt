@@ -5,6 +5,7 @@ import android.content.Context
 import com.yandex.mobile.ads.common.AdError
 import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdRequestError
+import com.yandex.mobile.ads.common.ImpressionData
 import com.yandex.mobile.ads.rewarded.Reward
 import com.yandex.mobile.ads.rewarded.RewardedAd
 import com.yandex.mobile.ads.rewarded.RewardedAdEventListener
@@ -70,6 +71,10 @@ class RewardedAdController(private val unitId: String) {
                     AdsLog.info("rewarded", "награда выдана: ${reward.amount} ${reward.type}")
                 }
 
+                override fun onAdShown() {
+                    AdsLog.info("rewarded", "показана")
+                }
+
                 override fun onAdDismissed() {
                     onOutcome(if (rewarded) RewardedOutcome.REWARDED else RewardedOutcome.NOT_REWARDED)
                 }
@@ -77,6 +82,14 @@ class RewardedAdController(private val unitId: String) {
                 override fun onAdFailedToShow(adError: AdError) {
                     AdsLog.warn("rewarded", null, adError.description.orEmpty())
                     onOutcome(RewardedOutcome.FAILED)
+                }
+
+                override fun onAdClicked() {
+                    AdsLog.info("rewarded", "клик")
+                }
+
+                override fun onAdImpression(data: ImpressionData?) {
+                    AdsLog.info("rewarded", "показ засчитан")
                 }
             },
         )
