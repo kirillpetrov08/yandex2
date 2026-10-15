@@ -22,6 +22,9 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.coroutines.coroutineContext
 
+/** Сколько ждать буфер кодека, микросекунды. Нужен и объекту-конвертеру, и [EncodeSink]. */
+private const val CODEC_TIMEOUT_US = 10_000L
+
 /**
  * Аудио → WAV / M4A / OGG.
  *
@@ -37,7 +40,6 @@ object AudioConverter {
     /** Opus всегда кодируется в 48 кГц — это требование кодека, остальное ресемплируется. */
     const val OPUS_SAMPLE_RATE = 48_000
     private const val OPUS_MIME = "audio/opus"
-    private const val TIMEOUT_US = 10_000L
 
     private val SUPPORTED_OUTPUTS = setOf(Formats.WAV, Formats.M4A, Formats.OGG)
 
@@ -146,7 +148,7 @@ object AudioConverter {
             coroutineContext.ensureActive()
 
             if (!inputDone) {
-                val index = decoder.dequeueInputBuffer(TIMEOUT_US)
+                val index = decoder.dequeueInputBuffer(CODEC_TIMEOUT_US)
                 if (index >= 0) {
                     val buffer = decoder.getInputBuffer(index) ?: throw CannotOpenFileException()
                     val size = extractor.readSampleData(buffer, 0)
@@ -160,7 +162,7 @@ object AudioConverter {
                 }
             }
 
-            val outIndex = decoder.dequeueOutputBuffer(info, TIMEOUT_US)
+            val outIndex = decoder.dequeueOutputBuffer(info, CODEC_TIMEOUT_US)
             when {
                 outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                     val format = decoder.outputFormat
@@ -312,7 +314,7 @@ private class ResamplingSink(
 private class EncodeSink(
     file: File,
     mime: String,
-    sampleRate: Int,
+    private val sampleRate: Int,
     private val channels: Int,
     bitRate: Int,
     muxerFormat: Int,
@@ -342,7 +344,7 @@ private class EncodeSink(
     override fun write(samples: ShortArray, count: Int) {
         var offset = 0
         while (offset < count) {
-            val index = encoder.dequeueInputBuffer(TIMEOUT_US)
+            val index = encoder.dequeueInputBuffer(CODEC_TIMEOUT_US)
             if (index < 0) {
                 drain(blocking = false)
                 continue
@@ -364,7 +366,7 @@ private class EncodeSink(
 
     override fun finish() {
         while (!inputDone) {
-            val index = encoder.dequeueInputBuffer(TIMEOUT_US)
+            val index = encoder.dequeueInputBuffer(CODEC_TIMEOUT_US)
             if (index >= 0) {
                 val pts = if (sampleRate > 0) framesWritten * 1_000_000L / sampleRate else 0L
                 encoder.queueInputBuffer(index, 0, 0, pts, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
@@ -382,7 +384,7 @@ private class EncodeSink(
 
     private fun drain(blocking: Boolean) {
         while (!outputDone) {
-            val index = encoder.dequeueOutputBuffer(info, if (blocking) TIMEOUT_US else 0L)
+            val index = encoder.dequeueOutputBuffer(info, if (blocking) CODEC_TIMEOUT_US else 0L)
             when {
                 index == MediaCodec.INFO_TRY_AGAIN_LATER -> return
 

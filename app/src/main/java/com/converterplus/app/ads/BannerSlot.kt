@@ -63,7 +63,6 @@ private fun createBannerView(context: Context, widthDp: Int): BannerAdView {
     val units = Ads.units
     return BannerAdView(context).apply {
         setAdSize(BannerAdSize.sticky(context, widthDp))
-        setAdUnitId(units.bannerUnitId)
         loadAd(AdRequest.Builder(units.bannerUnitId).build())
     }
 }

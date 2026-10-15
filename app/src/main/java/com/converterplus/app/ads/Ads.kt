@@ -73,10 +73,10 @@ object Ads {
             YandexAds.setUserConsent(ConsentManager.userConsentForSdk(app))
             YandexAds.setLocationTracking(false)
             YandexAds.setAgeRestricted(false)
-            YandexAds.initialize(app) { status ->
+            YandexAds.initialize(app) {
                 _initialized.value = true
                 refreshAdsAllowed(app)
-                AdsLog.info("init", "SDK готов: $status, testMode=${units.testMode}")
+                AdsLog.info("init", "SDK готов, testMode=${units.testMode}")
             }
         } catch (t: Throwable) {
             initStarted = false

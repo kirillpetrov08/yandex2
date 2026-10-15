@@ -22,10 +22,14 @@ object AdsLog {
         Log.i(TAG, "$format: $message")
     }
 
-    /** code + description приходят из AdRequestError / AdFailureError. */
-    fun warn(format: String, code: Int, description: String) {
-        record("WARN $format: code=$code $description")
-        Log.w(TAG, "$format: code=$code $description")
+    /**
+     * code + description приходят из AdRequestError (ошибка загрузки). У ошибки показа
+     * AdError кода нет — тогда первым аргументом идёт null.
+     */
+    fun warn(format: String, code: Int?, description: String) {
+        val codeText = code?.toString() ?: "-"
+        record("WARN $format: code=$codeText $description")
+        Log.w(TAG, "$format: code=$codeText $description")
     }
 
     fun error(format: String, message: String, throwable: Throwable? = null) {

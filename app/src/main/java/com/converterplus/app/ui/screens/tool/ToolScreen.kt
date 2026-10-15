@@ -169,7 +169,7 @@ fun ToolScreen(
     /** Основное действие зоны выбора: сначала пробуем галерею, если она уместна. */
     fun openPicker() {
         val galleryAvailable = Capabilities.hasGallerySource(tool) &&
-            ActivityResultContracts.PickVisualMedia.isAvailable(context)
+            ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context)
         if (galleryAvailable) openGalleryPicker() else openFilesPicker()
     }
 
@@ -1090,7 +1090,7 @@ private fun openSavedLocation(context: Context, uri: String, isFolder: Boolean) 
         Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(
                 Uri.parse(uri),
-                android.provider.DocumentsContract.MIME_TYPE_DIR,
+                android.provider.DocumentsContract.Document.MIME_TYPE_DIR,
             )
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
