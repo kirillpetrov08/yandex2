@@ -43,12 +43,24 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleDebug bundleRelease
+        run: ./gradlew assembleDebug assembleRelease bundleRelease
 
-      - name: Проверка подписи AAB
+      - name: Проверка подписи (APK и AAB)
         run: |
-          AAB=$(ls app/build/outputs/bundle/release/*.aab)
-          jarsigner -verify -verbose -certs "$AAB" > /dev/null && echo "Подпись OK"
+          APK=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null || true)
+          AAB=$(ls app/build/outputs/bundle/release/*.aab 2>/dev/null || true)
+          APKSIGNER=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$APK" ] && [ -n "$APKSIGNER" ] && "$APKSIGNER" verify "$APK" > /dev/null 2>&1; then
+            echo "Подпись APK OK"
+            "$APKSIGNER" verify --print-certs "$APK" | grep -E "SHA-256|Signer" || true
+          else
+            echo "::warning title=APK не подписан::Добавьте секреты KEYSTORE_* — такой APK в магазин не годится"
+          fi
+          if [ -n "$AAB" ] && jarsigner -verify -verbose -certs "$AAB" > /dev/null 2>&1; then
+            echo "Подпись AAB OK"
+          else
+            echo "::warning title=AAB не подписан::Добавьте секреты KEYSTORE_*"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

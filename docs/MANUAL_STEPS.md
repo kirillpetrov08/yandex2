@@ -23,6 +23,8 @@
 4. **Завести блоки в РСЯ** (https://partner.yandex.ru) и вписать три реальных ID
    вида `R-M-XXXXXXX-Y` в `gradle.properties`, там же поставить `ads.testMode=false`.
    Положить `docs/app-ads.txt` в корень своего домена.
+   Реклама начнёт приносить доход только после того, как приложение получит в РСЯ
+   статус «Активно» (модерация до 2 дней) — порядок в `docs/APK_RELEASE.md`.
 
 5. **Заменить контакты на свои** в трёх местах:
    `app/src/main/java/com/converterplus/app/Config.kt` (почта, домен, ссылка на магазин),
@@ -32,7 +34,10 @@
    на свой домен так, чтобы открывалась по адресу из `Config.PRIVACY_POLICY_URL`.
 
 7. **Собрать релиз**: дождаться зелёного прогона GitHub Actions, скачать артефакт
-   `build-outputs`, взять файл `app/build/outputs/bundle/release/*.aab`.
+   `build-outputs`. Для Google Play взять `app/build/outputs/bundle/release/*.aab`,
+   для RuStore можно взять APK `app/build/outputs/apk/release/app-release.apk`
+   (как собрать APK локально и что проверить — `docs/APK_RELEASE.md`).
+   Перед каждой загрузкой поднимать `versionCode` в `app/build.gradle.kts`.
 
 8. **Загрузить AAB в магазины и заполнить формы.** В RuStore сначала окно
    «Ключ подписи приложения»: `tools\rustore-signature.cmd --encryption-key=<ключ из окна>`

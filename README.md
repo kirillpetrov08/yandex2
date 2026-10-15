@@ -25,8 +25,11 @@
 ```bash
 ./gradlew testDebugUnitTest     # юнит-тесты чистой логики
 ./gradlew assembleDebug         # отладочный APK
+./gradlew assembleRelease       # релизный APK для RuStore (реклама — реальные блоки РСЯ)
 ./gradlew bundleRelease         # релизный AAB (подпись — из переменных окружения)
 ```
+
+Порядок «собрать APK с рабочей рекламой» — в `docs/APK_RELEASE.md`.
 
 Подпись релиза берётся из переменных окружения `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`,
 `KEY_ALIAS`, `KEY_PASSWORD`. Без них сборка проходит, но печатает
@@ -130,6 +133,7 @@ python3 tools/verify_stage1.py
 ## Публикация
 
 - `docs/DEPLOY.md` — пошаговая инструкция (ключи, секреты, РСЯ, магазины).
+- `docs/APK_RELEASE.md` — релизный APK без заглушек и с рабочей рекламой РСЯ.
 - `docs/RUSTORE_SIGNING.md` — подпись для RuStore: два ключа, PEPK, разбор ошибок.
 - `docs/MANUAL_STEPS.md` — 8 пунктов, которые делает человек.
 - `docs/STORE_TEXTS.md` — тексты для Google Play и RuStore (только реализованное).

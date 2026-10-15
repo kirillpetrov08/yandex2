@@ -397,6 +397,7 @@ def check_gradle() -> None:
         "app/proguard-rules.pro",
         # Документы и скрипты публикации — часть поставки, не удалять.
         "docs/RUSTORE_SIGNING.md",
+        "docs/APK_RELEASE.md",
         "tools/rustore-signature.cmd",
         "tools/rustore-signature.sh",
     ]:
