@@ -258,7 +258,7 @@ base64 -i app-signing.keystore | tr -d '\n'   # macOS
 
 | Артефакт | Что внутри | Кому нужен |
 |---|---|---|
-| **release-apk** | `app-release.apk` (подписанный, для RuStore) и `app-debug.apk`; если секреты ключа не заданы — `app-release-unsigned.apk` | основной |
+| **release-apk** | `app-release.apk` и `app-debug.apk`; если четыре секрета ключа не заданы (шаг B), релизный APK неподписан — в шапке прогона будет предупреждение, а для RuStore такой файл не годится | основной |
 | **build-outputs** | всё, что собрал Gradle: APK, AAB, отчёты | если нужен AAB для Google Play |
 | **test-report** | HTML-отчёт тестов | если тесты упали |
 
@@ -369,7 +369,7 @@ adb logcat -s ConverterAds:V
 | `::warning` «Секрет KEYSTORE_BASE64 пуст» | секрет не добавлен | шаг B |
 | `Could not find com.yandex.android:mobileads:8.6.0` | репозитории Maven | проверить, что в `settings.gradle.kts` есть `google()`, `mavenCentral()`, `jitpack`; повторить прогон (иногда сбой сети) |
 | Упали тесты | в отчёте `test-report` видно какой тест | посмотреть отчёт, править код, запушить снова |
-| `::error title=APK не найден` «Сборка не создала `app-release.apk`» | секреты `KEYSTORE_*` не заданы, поэтому AGP называет файл `app-release-unsigned.apk` (шаг B не выполнен) | два пути: задать четыре секрета (тогда появится подписанный `app-release.apk`) **или** обновить воркфлоу до текущего `docs/ci-android.yml` (шаг C3) — он принимает оба имени и выдаёт `::warning` про APK без подписи |
+| `::error title=APK не найден` «Сборка не создала `app-release.apk`» | в `.github/workflows/android.yml` лежит **старая** копия воркфлоу: раньше сборка без секретов `KEYSTORE_*` не оставляла файла с таким именем | обновить воркфлоу до текущего `docs/ci-android.yml` (шаг C3): он принимает и `app-release.apk`, и `app-release-unsigned.apk`, а про отсутствие подписи пишет `::warning` |
 | Шаг **Статические проверки проекта** упал, а в аннотациях видно `e: file://…` | компилятор Kotlin нашёл ошибку в коде | файл и строка указаны прямо в аннотации — править там; полный лог лежит в артефакте `test-report` (файл `ci-gradle.log`) |
 | Ошибки R8/Proguard в release | правила минификации | `app/proguard-rules.pro`: для наших SDK правила уже есть |
 | `::error title=ID блока не попал в APK` | сборка подставила другие ID | проверить `gradle.properties`, перезапустить прогон |
