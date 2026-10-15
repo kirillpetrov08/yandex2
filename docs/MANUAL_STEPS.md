@@ -12,8 +12,9 @@
 3. **Добавить секреты в GitHub** (Settings → Secrets → Actions):
    `KEYSTORE_BASE64` (`openssl base64 -A -in upload-keystore.jks`),
    `KEYSTORE_PASSWORD`, `KEY_ALIAS` (= `upload`), `KEY_PASSWORD`.
-   Если файл `.github/workflows/android.yml` не принял push от бота — создать его руками
-   через веб-интерфейс GitHub (Add file → Create new file), содержимое уже готово.
+   Затем создать воркфлоу руками через веб-интерфейс GitHub (Add file → Create new file →
+   имя `.github/workflows/android.yml` → вставить содержимое `docs/ci-android.yml`):
+   push этого пути от бота отклоняется, у GitHub App нет права `workflows`.
 
 4. **Завести блоки в РСЯ** (https://partner.yandex.ru) и вписать три реальных ID
    вида `R-M-XXXXXXX-Y` в `gradle.properties`, там же поставить `ads.testMode=false`.

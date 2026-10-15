@@ -395,10 +395,16 @@ def check_gradle() -> None:
         "gradlew",
         "app/build.gradle.kts",
         "app/proguard-rules.pro",
-        ".github/workflows/android.yml",
     ]:
         if not os.path.exists(os.path.join(ROOT, required)):
             errors.append(f"нет обязательного файла: {required}")
+
+    # Воркфлоу: либо на месте, либо лежит копией в docs (push в .github/workflows боту запрещён).
+    if not (
+        os.path.exists(os.path.join(ROOT, ".github", "workflows", "android.yml"))
+        or os.path.exists(os.path.join(ROOT, "docs", "ci-android.yml"))
+    ):
+        errors.append("нет CI-воркфлоу: ни .github/workflows/android.yml, ни docs/ci-android.yml")
 
     props = open(os.path.join(ROOT, "gradle.properties"), encoding="utf-8").read()
     for key in [

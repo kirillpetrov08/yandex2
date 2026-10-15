@@ -50,18 +50,22 @@ keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
 
 ## 3. GitHub Actions
 
-Файл `.github/workflows/android.yml` уже в репозитории.
+Содержимое воркфлоу лежит в репозитории в файле **`docs/ci-android.yml`**.
 
 Gradle Wrapper (`gradlew`, `gradle/wrapper/gradle-wrapper.jar`, версия 8.11.1) уже в репозитории —
 отдельно генерировать его не нужно.
+
+> Проверено на практике: push файла `.github/workflows/android.yml` от бота отклоняется
+> (`refusing to allow a GitHub App to create or update workflow ... without workflows permission`).
+> Поэтому в репозитории лежит копия `docs/ci-android.yml`, а сам файл создаётся руками.
 
 Если шаг «Установка платформы» упадёт на лицензиях, добавьте перед ним строку:
 `run: yes | sdkmanager --licenses`
 
 **Важно:** GitHub может не принять файлы в `.github/workflows/` от бота или токена
-(ошибка `refusing to allow an app to create or update workflow`). Тогда создайте файл руками:
+(ошибка `refusing to allow an app to create or update workflow`). Создайте файл руками:
 GitHub → ваш репозиторий → `Add file` → `Create new file` →
-в имени введите `.github/workflows/android.yml` → вставьте содержимое файла → `Commit`.
+в имени введите `.github/workflows/android.yml` → вставьте содержимое `docs/ci-android.yml` → `Commit`.
 
 Проверка: вкладка **Actions** → запуск `Android CI` → все шаги зелёные,
 в артефактах `build-outputs` лежат APK и AAB.

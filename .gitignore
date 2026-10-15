@@ -24,3 +24,9 @@ Thumbs.db
 
 # Данные OCR (тяжёлые, кладутся вручную в assets/tessdata — см. docs/DEPLOY.md)
 app/src/main/assets/tessdata/*.traineddata
+
+# CI-файл создаётся вручную через веб-интерфейс GitHub (см. docs/DEPLOY.md, шаг 3):
+# у бота нет права workflows. Копия содержимого лежит в docs/ci-android.yml.
+.github/workflows/
+__pycache__/
+*.pyc
