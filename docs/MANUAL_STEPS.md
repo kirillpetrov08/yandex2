@@ -29,15 +29,15 @@
    добавить ссылку на карточку в кабинете РСЯ.
    Доход начнётся только после статуса «Активно» (модерация до 2 дней) — `docs/APK_RELEASE.md`.
 
-5. **Заменить контакты на свои**: почту `support.converterplus@gmail.com` в
-   `app/src/main/java/com/converterplus/app/Config.kt`, `docs/privacy_policy.html`,
-   `docs/STORE_TEXTS.md`. Там же — ссылка на карточку магазина (`Config.STORE_URL`)
-   после публикации.
+5. **Контакты и политика уже настроены** — почта `kirillpetrov08@gmail.com` вписана в
+   `Config.kt`, в политике и в текстах магазина, ссылка на политику —
+   `https://kirillpetrov08.github.io/converterplus/privacy-policy.html`.
+   От вас только ссылка на карточку магазина (`Config.STORE_URL`) после публикации.
 
-6. **Включить GitHub Pages** (Settings → Pages → Deploy from a branch → main → /docs):
-   после этого политика откроется по адресу из `Config.PRIVACY_POLICY_URL`, а `app-ads.txt`
-   — по адресу домена разработчика для РСЯ. Если хостите сами — залейте эти два файла
-   на свой домен и поправьте константы в `Config.kt`.
+6. **Ничего включать не нужно**: сайт разработчика `https://kirillpetrov08.github.io`
+   уже работает, на нём лежат политика и `app-ads.txt` в корне домена
+   (`yandex.com, 110347355, DIRECT`). Осталось нажать в кабинете РСЯ
+   **Настройки → Общие → app-ads.txt → «Отправить на проверку»**.
 
 7. **Собрать релиз**: дождаться зелёного прогона GitHub Actions, скачать артефакт
    `build-outputs`. Для Google Play взять `app/build/outputs/bundle/release/*.aab`,

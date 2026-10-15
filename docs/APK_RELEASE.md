@@ -17,18 +17,20 @@
 | Категория | Что это | Действие |
 |---|---|---|
 | **Рекламные блоки** | `ads.bannerUnitId` и др. в `gradle.properties` | уже вписаны боевые ID `R-M-20230616-2` / `-4` / `-7` и `ads.testMode=false`; менять только при создании новых блоков |
-| **Контакты и домен** | `Config.kt`, `docs/privacy_policy.html`, `docs/STORE_TEXTS.md` | заменить на свои |
-| **Publisher ID** | `ВАШ_PUBLISHER_ID` в `docs/app-ads.txt` | взять в кабинете РСЯ |
-| **Версия сборки** | `versionCode 1` / `versionName "1.0.0"` | поднять перед каждой загрузкой в магазин |
-| **Инструменты «Скоро»** | «Видео», «Аудио», «OCR» на главной | **не заглушки**: это объём этапов 2–4. Работают «Изображения», «PDF → Изображения», «Изображения → PDF». Убирать их из интерфейса нельзя — ТЗ требует показывать их с пометкой «Скоро» |
+| **Контакты и домен** | `Config.kt`, `docs/privacy_policy.html`, `docs/STORE_TEXTS.md` | **уже заполнены**: `kirillpetrov08@gmail.com`, политика на `https://kirillpetrov08.github.io/converterplus/privacy-policy.html` |
+| **Publisher ID** | `docs/app-ads.txt` | **уже вписан**: `yandex.com, 110347355, DIRECT`, файл опубликован в корне сайта |
+| **Версия сборки** | `versionCode 1` / `versionName "1.0.0"` | поднять перед каждой загрузкой в магазин (в CI — полем `version_code` в форме запуска) |
+| **Инструменты на главной** | все шесть: изображения, PDF → фото, фото → PDF, извлечение текста, аудио, видео | **заглушек нет**: этапы 1–4 реализованы, все инструменты работают |
 
-Все места, куда нужно вписать свои данные, можно найти поиском (латиница ищется надёжно;
-кириллический маркер `ЗАМЕНИТЬ` — через PowerShell, потому что `findstr` в cmd не понимает UTF-8):
+Проверить, что плейсхолдеров не осталось, можно поиском:
 
 ```cmd
-findstr /s /n /c:"ВАШ_" /c:"demo-" app\src\main\java\*.kt gradle.properties docs\app-ads.txt
-powershell -Command "Get-ChildItem -Recurse app\src\main\java -Filter *.kt | Select-String -Pattern 'ЗАМЕНИТЬ' -Encoding UTF8"
+findstr /s /n /c:"ВАШ_" /c:"demo-" /c:"support.converterplus" /c:"example.com" app\src\main\java\*.kt docs\*.html docs\STORE_TEXTS.md gradle.properties
 ```
+
+В коде приложения, в политике и в текстах магазинов команда не должна ничего найти.
+Строки `demo-*` в `app/build.gradle.kts` и `ads/AdUnits.kt` — это значения по умолчанию
+для отладочных сборок без `gradle.properties`, они там нужны намеренно.
 
 ---
 
@@ -88,10 +90,10 @@ ads.rewardedNoAdsMinutes=30
 
 | Файл | Что заменить |
 |---|---|
-| `app/src/main/java/com/converterplus/app/Config.kt` | `SUPPORT_EMAIL` (почта), `PRIVACY_POLICY_URL` (ссылка на политику), `STORE_URL` (ссылка на приложение в магазине), `APP_ADS_DOMAIN` (домен, где лежит `app-ads.txt`) |
-| `docs/privacy_policy.html` | почта и домен в тексте политики — этот файл публикуется на сайте |
-| `docs/STORE_TEXTS.md` | почта и ссылка на политику в описаниях для магазинов |
-| `docs/app-ads.txt` | `ВАШ_PUBLISHER_ID` на реальный номер из РСЯ: Настройки → Общие → кнопка **app-ads.txt** |
+| `app/src/main/java/com/converterplus/app/Config.kt` | уже заполнено: `SUPPORT_EMAIL = "kirillpetrov08@gmail.com"`, `PRIVACY_POLICY_URL` → опубликованная страница, `APP_ADS_DOMAIN = "kirillpetrov08.github.io"`; менять только `STORE_URL` после публикации |
+| `docs/privacy_policy.html` | копия опубликованной страницы (оригинал — на сайте, см. ниже) |
+| `docs/STORE_TEXTS.md` | почта, сайт и ссылка на политику — уже вписаны в описания для магазинов |
+| `docs/app-ads.txt` | копия файла, опубликованного по адресу `https://kirillpetrov08.github.io/app-ads.txt` |
 
 Почему это важно для денег: часть DSP-сетей не покупает показы, если `app-ads.txt` не
 опубликован; кроме того, файл — один из способов подтвердить доступ к приложению,
