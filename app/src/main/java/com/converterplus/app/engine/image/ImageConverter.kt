@@ -103,7 +103,8 @@ object ImageConverter {
     private fun decodeWithImageDecoder(file: File, maxSide: Int = 0): Bitmap? = try {
         val source = ImageDecoder.createSource(file)
         ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-            decoder.setDecodeAsAlphaEnabled(true)
+            // Без premultiplied alpha цвета полупрозрачных пикселей не «съедаются» при перекодировании.
+            decoder.setUnpremultipliedRequired(true)
             if (maxSide > 0) {
                 val sample = sampleSize(info.size.width, info.size.height, maxSide)
                 if (sample > 1) {

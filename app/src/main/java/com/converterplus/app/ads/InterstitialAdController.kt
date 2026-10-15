@@ -2,11 +2,11 @@ package com.converterplus.app.ads
 
 import android.app.Activity
 import android.content.Context
-import com.yandex.mobile.ads.interstitial.GenericAdEventListener
 import com.yandex.mobile.ads.interstitial.InterstitialAd
+import com.yandex.mobile.ads.interstitial.InterstitialAdEventListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoadListener
 import com.yandex.mobile.ads.interstitial.InterstitialAdLoader
-import com.yandex.mobile.ads.common.AdFailureError
+import com.yandex.mobile.ads.common.AdError
 import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdRequestError
 
@@ -65,14 +65,14 @@ class InterstitialAdController(private val unitId: String) {
         state = AdLoadState.Idle
 
         ad.setAdEventListener(
-            object : GenericAdEventListener() {
+            object : InterstitialAdEventListener {
                 override fun onAdDismissed() {
                     AdsLog.info("interstitial", "закрыта")
                     onFinished()
                 }
 
-                override fun onAdFailedToShow(error: AdFailureError) {
-                    AdsLog.warn("interstitial", error.code, error.description.orEmpty())
+                override fun onAdFailedToShow(adError: AdError) {
+                    AdsLog.warn("interstitial", null, adError.description.orEmpty())
                     onFinished()
                 }
             },

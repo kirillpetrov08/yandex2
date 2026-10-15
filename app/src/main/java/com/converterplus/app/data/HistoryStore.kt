@@ -73,7 +73,7 @@ object HistoryTsv {
         entries.joinToString("\n") { encode(it) }
 
     fun decodeAll(text: String): List<HistoryEntry> =
-        text.lineSequence().mapNotNull { decode(it) }
+        text.lineSequence().mapNotNull { decode(it) }.toList()
 
     /** Новые записи сверху, сверх лимита отбрасываются. */
     fun enforceLimit(entries: List<HistoryEntry>, limit: Int = MAX_ENTRIES): List<HistoryEntry> =

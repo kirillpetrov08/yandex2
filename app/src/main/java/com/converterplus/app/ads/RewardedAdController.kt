@@ -2,19 +2,21 @@ package com.converterplus.app.ads
 
 import android.app.Activity
 import android.content.Context
-import com.yandex.mobile.ads.common.AdFailureError
+import com.yandex.mobile.ads.common.AdError
 import com.yandex.mobile.ads.common.AdRequest
 import com.yandex.mobile.ads.common.AdRequestError
-import com.yandex.mobile.ads.rewarded.GenericAdEventListener
+import com.yandex.mobile.ads.rewarded.Reward
 import com.yandex.mobile.ads.rewarded.RewardedAd
+import com.yandex.mobile.ads.rewarded.RewardedAdEventListener
 import com.yandex.mobile.ads.rewarded.RewardedAdLoadListener
 import com.yandex.mobile.ads.rewarded.RewardedAdLoader
 
 /**
  * Реклама за вознаграждение.
  *
- * Главное правило: награда выдаётся СТРОГО в onAdRewarded(). Если пользователь закрыл ролик
- * раньше — награды нет, и никаких упрёков в интерфейсе (см. [RewardedOutcome.NOT_REWARDED]).
+ * Главное правило: награда выдаётся СТРОГО в onRewarded() — единственном колбэке, который
+ * SDK вызывает после просмотра ролика до конца. Если пользователь закрыл ролик раньше —
+ * награды нет, и никаких упрёков в интерфейсе (см. [RewardedOutcome.NOT_REWARDED]).
  */
 class RewardedAdController(private val unitId: String) {
 
@@ -62,18 +64,18 @@ class RewardedAdController(private val unitId: String) {
 
         var rewarded = false
         ad.setAdEventListener(
-            object : GenericAdEventListener() {
-                override fun onAdRewarded() {
+            object : RewardedAdEventListener {
+                override fun onRewarded(reward: Reward) {
                     rewarded = true
-                    AdsLog.info("rewarded", "награда выдана")
+                    AdsLog.info("rewarded", "награда выдана: ${reward.amount} ${reward.type}")
                 }
 
                 override fun onAdDismissed() {
                     onOutcome(if (rewarded) RewardedOutcome.REWARDED else RewardedOutcome.NOT_REWARDED)
                 }
 
-                override fun onAdFailedToShow(error: AdFailureError) {
-                    AdsLog.warn("rewarded", error.code, error.description.orEmpty())
+                override fun onAdFailedToShow(adError: AdError) {
+                    AdsLog.warn("rewarded", null, adError.description.orEmpty())
                     onOutcome(RewardedOutcome.FAILED)
                 }
             },
