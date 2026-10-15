@@ -144,6 +144,10 @@ python3 tools/verify_stage1.py
 - `docs/store/icon-512.png` — готовая иконка 512×512 для карточки магазина.
 - `docs/ADS_SETUP.md` — какие три блока РСЯ создавать, куда вписывать их ID и как собрать APK.
 - `docs/MANUAL_STEPS.md` — 8 пунктов, которые делает человек.
+- `docs/CI_BUILD.md` — сборка релиза через GitHub Actions: ключ, секреты, файлы воркфлоу,
+  запуск, скачивание подписанного APK, разбор падений.
+- `docs/ci-keystore.yml` — одноразовая генерация ключа подписи средствами GitHub (если на
+  компьютере нет Java).
 - `docs/STORE_TEXTS.md` — тексты для Google Play и RuStore (только реализованное).
 - `docs/PRIVACY_POLICY.md`, `docs/privacy_policy.html` — политика конфиденциальности.
 - `docs/app-ads.txt` — шаблон файла для домена разработчика.

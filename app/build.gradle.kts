@@ -40,6 +40,27 @@ if (!adsTestMode) {
 }
 
 // ---------------------------------------------------------------------------
+// Версия приложения. По умолчанию 1 / «1.0.0».
+// Перед загрузкой в магазин версию можно поднять, не трогая код:
+//   gradlew.bat assembleRelease -PversionCode=2 -PversionName=1.0.1
+//   или переменными окружения VERSION_CODE / VERSION_NAME (так делает CI —
+//   в форме запуска воркфлоу есть поля versionCode и versionName, см. docs/CI_BUILD.md).
+// ---------------------------------------------------------------------------
+val versionCodeOverride: Int? =
+    (System.getenv("VERSION_CODE") ?: (project.findProperty("versionCode") as? String))
+        ?.trim()?.takeIf { it.isNotEmpty() }?.toIntOrNull()
+val versionNameOverride: String? =
+    (System.getenv("VERSION_NAME") ?: (project.findProperty("versionName") as? String))
+        ?.trim()?.takeIf { it.isNotEmpty() }
+
+val appVersionCode: Int = versionCodeOverride ?: 1
+val appVersionName: String = versionNameOverride ?: "1.0.0"
+
+if (versionCodeOverride != null || versionNameOverride != null) {
+    logger.lifecycle("Версия переопределена: versionCode=$appVersionCode, versionName=$appVersionName")
+}
+
+// ---------------------------------------------------------------------------
 // Подпись релиза. Секреты приходят из переменных окружения (CI) или из shell.
 // Если секретов нет — сборка проходит, но AAB остаётся неподписанным.
 // ---------------------------------------------------------------------------
@@ -58,8 +79,8 @@ android {
         applicationId = "com.converterplus.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         resourceConfigurations += "ru"
 
