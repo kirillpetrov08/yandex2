@@ -150,7 +150,22 @@ python3 tools/verify_stage1.py
   компьютере нет Java).
 - `docs/STORE_TEXTS.md` — тексты для Google Play и RuStore (только реализованное).
 - `docs/PRIVACY_POLICY.md`, `docs/privacy_policy.html` — политика конфиденциальности.
-- `docs/app-ads.txt` — шаблон файла для домена разработчика.
+- `docs/app-ads.txt` — копия файла, опубликованного в корне сайта разработчика.
+
+## Контакты и ссылки
+
+| Что | Значение | Где используется |
+|---|---|---|
+| Почта поддержки | `kirillpetrov08@gmail.com` | `Config.SUPPORT_EMAIL`, политика, `docs/STORE_TEXTS.md`, карточка RuStore |
+| Политика конфиденциальности | <https://kirillpetrov08.github.io/converterplus/privacy-policy.html> | `Config.PRIVACY_POLICY_URL`, онбординг, настройки, карточка RuStore |
+| Сайт разработчика | <https://kirillpetrov08.github.io> | карточка RuStore, описание приложения |
+| app-ads.txt (РСЯ) | <https://kirillpetrov08.github.io/app-ads.txt> | `yandex.com, 110347355, DIRECT` |
+| Партнёрский ID РСЯ | `110347355` | строка в app-ads.txt (выдаётся кабинетом) |
+
+Сайт и оба файла лежат в отдельном репозитории `kirillpetrov08.github.io` (GitHub Pages,
+ветка `main`, корень). В этом репозитории `docs/privacy_policy.html` и `docs/app-ads.txt` —
+копии для истории: при правках обновляйте обе версии и проверяйте, что адрес страницы
+совпадает с `Config.PRIVACY_POLICY_URL`.
 
 ## Чего в приложении нет намеренно
 

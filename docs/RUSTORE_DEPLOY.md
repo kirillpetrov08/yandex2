@@ -35,18 +35,24 @@
 | Аккаунт VK ID | <https://vk.com> | вход по телефону или e-mail |
 | Ключ подписи `app-signing.keystore` | `docs/RUSTORE_SIGNING.md`, раздел 4–5 | alias `sign`, пароли в менеджере паролей |
 | Подписанный APK | `docs/APK_RELEASE.md`, раздел 5 | `apksigner verify --print-certs` показывает ваш ключ |
-| Иконка 512×512 PNG | из проекта (адаптивная иконка → экспорт 512 px) | без прозрачных краёв, фон по всей площади |
+| Иконка 512×512 PNG | готовая: `docs/store/icon-512.png` | синий фон залит целиком, без прозрачных краёв |
 | 3–10 скриншотов | эмулятор или телефон | вертикальные, до 2160×3840, PNG/JPG |
 | Тексты описания | `docs/STORE_TEXTS.md`, раздел 2 (RuStore) | краткое ≤ 80, полное ≤ 4000 символов |
-| URL политики конфиденциальности | `docs/privacy_policy.html`, выложенный в интернет | открывается в браузере, текст на русском |
-| Публичный e-mail поддержки | `Config.kt` (`support.converterplus@gmail.com` — заменить на свой) | письма доходят |
+| URL политики конфиденциальности | `https://kirillpetrov08.github.io/converterplus/privacy-policy.html` | открывается в браузере, текст на русском |
+| Публичный e-mail поддержки | `kirillpetrov08@gmail.com` (он же в `Config.kt`) | письма доходят |
 | ID блоков РСЯ | кабинет РСЯ | формат `R-M-XXXXXXX-Y`, `ads.testMode=false` |
 
-Политику конфиденциальности удобно выложить бесплатно через GitHub Pages:
-положите `docs/privacy_policy.html` в публичный репозиторий, включите Pages,
-получите адрес вида `https://логин.github.io/репозиторий/privacy_policy.html`.
-Там же в корне сайта кладётся `docs/app-ads.txt` — это требование рекламной экосистемы
-(не RuStore), без него часть DSP не покупает показы.
+Политика конфиденциальности и `app-ads.txt` уже опубликованы на сайте разработчика
+(GitHub Pages репозитория `kirillpetrov08.github.io`):
+
+- политика: `https://kirillpetrov08.github.io/converterplus/privacy-policy.html`
+- `app-ads.txt` в корне домена: `https://kirillpetrov08.github.io/app-ads.txt`
+  (строка `yandex.com, 110347355, DIRECT`) — это требование рекламной экосистемы,
+  не RuStore; без файла часть DSP не покупает показы.
+
+В карточке RuStore укажите сайт `https://kirillpetrov08.github.io` и ссылку на политику.
+Для RuStore РСЯ ищет контакты разработчика **в описании приложения** — поэтому в описание
+из `docs/STORE_TEXTS.md` добавлен блок «САЙТ И ПОДДЕРЖКА».
 
 ---
 
@@ -448,8 +454,9 @@ export KEY_PASSWORD='пароль_от_ключа'
 - [ ] `ads.testMode=false`, в `gradle.properties` реальные `R-M-…-Y` ID;
 - [ ] APK подписан `app-signing.keystore` (alias `sign`), проверено `apksigner verify --print-certs`;
 - [ ] APK установлен на телефоне, все шесть инструментов пройдены руками;
-- [ ] `docs/privacy_policy.html` открывается по публичному адресу, текст на русском;
-- [ ] в `Config.kt` заменены `support.converterplus@gmail.com` и ссылка на карточку магазина (`PRIVACY_POLICY_URL` уже указывает на GitHub Pages);
+- [ ] политика открывается: `https://kirillpetrov08.github.io/converterplus/privacy-policy.html`, текст на русском;
+- [ ] в `Config.kt` стоит `kirillpetrov08@gmail.com` и актуальная ссылка на карточку магазина (`PRIVACY_POLICY_URL` уже указывает на опубликованную страницу);
+- [ ] `https://kirillpetrov08.github.io/app-ads.txt` открывается и содержит `yandex.com, 110347355, DIRECT`;
 - [ ] иконка 512×512 без прозрачных краёв;
 - [ ] минимум 3 скриншота вертикальной ориентации;
 - [ ] название ≤ 30 символов, краткое описание ≤ 80, полное ≤ 4000;

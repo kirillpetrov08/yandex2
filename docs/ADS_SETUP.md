@@ -166,38 +166,46 @@ ads.rewardedNoAdsMinutes=30               # сколько минут рекла
 
 ### 3.2 `app/src/main/java/com/converterplus/app/Config.kt`
 
-| Константа | Что стоит сейчас | Что делать |
+| Константа | Значение в проекте | Комментарий |
 |---|---|---|
-| `SUPPORT_EMAIL` | `support.converterplus@gmail.com` | **заменить на свою почту** — она идёт в карточку RuStore и в письма из приложения |
-| `PRIVACY_POLICY_URL` | `https://kirillpetrov08.github.io/yandex2/privacy_policy.html` | работает после включения GitHub Pages (см. 3.3); если хостите политику у себя — впишите свой адрес |
+| `SUPPORT_EMAIL` | `kirillpetrov08@gmail.com` | почта разработчика: идёт в карточку RuStore и в письма из приложения |
+| `PRIVACY_POLICY_URL` | `https://kirillpetrov08.github.io/converterplus/privacy-policy.html` | страница опубликована и открывается |
 | `STORE_URL` | `https://www.rustore.ru/catalog/app/com.converterplus.app` | после публикации вставьте точную ссылку из карточки RuStore |
 | `APP_ADS_DOMAIN` | `kirillpetrov08.github.io` | домен разработчика, где лежит `app-ads.txt` |
 
-### 3.3 `docs/app-ads.txt` и GitHub Pages
+### 3.3 `app-ads.txt` и сайт разработчика
 
 РСЯ проверяет файл `app-ads.txt` на сайте разработчика (сайт берётся из карточки магазина)
 раз в сутки. Без файла часть DSP не покупает показы — деньги теряются молча.
 
-1. Включить GitHub Pages: репозиторий → **Settings → Pages** → Source **Deploy from a branch**,
-   Branch **main**, Folder **/docs** → **Save**. Через минуту файлы из `docs/` станут доступны:
-   - политика: `https://kirillpetrov08.github.io/yandex2/privacy_policy.html`
-   - app-ads.txt: `https://kirillpetrov08.github.io/yandex2/app-ads.txt`
-2. В кабинете РСЯ открыть **Настройки → Общие → app-ads.txt** — там лежит готовый фрагмент
-   с вашим publisher ID. Скопировать строку в `docs/app-ads.txt` вместо `ВАШ_PUBLISHER_ID`.
-3. Проверить, что файл открывается по ссылке из п. 1, и что в кабинете РСЯ он не помечен
-   как «не найден».
+Всё уже опубликовано и проверено:
 
-Если политику и `app-ads.txt` вы размещаете не на GitHub Pages — залейте эти два файла
-на свой домен и поправьте `Config.PRIVACY_POLICY_URL` и `Config.APP_ADS_DOMAIN`.
+| Что | Адрес | Состояние |
+|---|---|---|
+| Сайт разработчика | `https://kirillpetrov08.github.io` | открывается |
+| app-ads.txt в корне домена | `https://kirillpetrov08.github.io/app-ads.txt` | содержит `yandex.com, 110347355, DIRECT` |
+| Политика «Конвертера+» | `https://kirillpetrov08.github.io/converterplus/privacy-policy.html` | открывается |
+| Политика «Блоков» | `https://kirillpetrov08.github.io/privacy-policy.html` | открывается |
+
+Файлы лежат в репозитории `kirillpetrov08.github.io` (GitHub Pages, ветка `main`, корень).
+Копии для истории — в этом репозитории: `docs/app-ads.txt` и `docs/privacy_policy.html`.
+
+Что осталось в кабинете РСЯ: **Настройки → Общие → app-ads.txt → «Отправить на проверку»**
+(проверка идёт раз в сутки) и убедиться, что сайт `https://kirillpetrov08.github.io` указан
+в карточке RuStore и в описании приложения — для RuStore РСЯ берёт контакты оттуда.
+
+Если когда-нибудь переедете на свой домен — залейте туда эти два файла и поправьте
+`Config.PRIVACY_POLICY_URL` и `Config.APP_ADS_DOMAIN`.
 
 ### 3.4 Проверка, что заглушек не осталось
 
 ```cmd
-findstr /s /n /c:"ВАШ_" /c:"example.com" /c:"demo-" app\src\main\java\*.kt gradle.properties docs\app-ads.txt
+findstr /s /n /c:"ВАШ_" /c:"example.com" /c:"support.converterplus" app\src\main\java\*.kt docs\*.md docs\*.html
 ```
 
-Команда должна найти только строку с `ВАШ_PUBLISHER_ID` — и только до того, как вы вставили
-свой publisher ID. Файл `app/build.gradle.kts` специально содержит строки `demo-*` как
+В коде приложения, в политике и в текстах магазинов команда не должна ничего найти:
+контакты и адреса уже заполнены боевыми значениями.
+Файл `app/build.gradle.kts` специально содержит строки `demo-*` как
 значения по умолчанию: они нужны для отладочных сборок без `gradle.properties`.
 
 ---

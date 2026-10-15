@@ -225,70 +225,55 @@ Push файла `.github/workflows/*` ботом отклоняется (у GitH
 RuStore требует ссылку на политику в карточке **и** внутри приложения, РСЯ хочет
 `app-ads.txt` на сайте разработчика. И то, и другое отдаётся одним переключателем.
 
-**Где:** GitHub → репозиторий → **Settings** → **Pages** (левое меню) →
-Source: **Deploy from a branch** → Branch: **main**, Folder: **/docs** → **Save**.
+**Ничего настраивать не нужно** — сайт разработчика уже работает, на нём лежат оба файла
+в нужных местах (репозиторий `kirillpetrov08.github.io`, GitHub Pages, ветка `main`, корень):
 
-Через 1–2 минуты проверьте ссылки (должны открыться в браузере):
-
-- <https://kirillpetrov08.github.io/yandex2/privacy_policy.html>
-- <https://kirillpetrov08.github.io/yandex2/app-ads.txt>
+| Что | Адрес | Содержимое |
+|---|---|---|
+| Сайт разработчика | <https://kirillpetrov08.github.io> | список приложений |
+| Политика «Конвертера+» | <https://kirillpetrov08.github.io/converterplus/privacy-policy.html> | текст политики на русском |
+| app-ads.txt | <https://kirillpetrov08.github.io/app-ads.txt> | `yandex.com, 110347355, DIRECT` |
+| Политика «Блоков» | <https://kirillpetrov08.github.io/privacy-policy.html> | не трогать: ссылка стоит в карточке игры |
 
 **Команда для проверки из терминала:**
 
 ```bash
-curl -I https://kirillpetrov08.github.io/yandex2/privacy_policy.html
-curl -I https://kirillpetrov08.github.io/yandex2/app-ads.txt
+curl -I https://kirillpetrov08.github.io/converterplus/privacy-policy.html
+curl -I https://kirillpetrov08.github.io/app-ads.txt
 ```
 
 Ожидаемые заголовки: `HTTP/2 200`.
 
-### 3.1 Вписать publisher ID в app-ads.txt
+### 3.1 Что осталось в кабинете РСЯ
 
 **Где:** кабинет РСЯ <https://partner.yandex.ru> → **Настройки** → **Общие** → блок
-**app-ads.txt** (там есть кнопка скачивания готового файла).
+**app-ads.txt** → кнопка **«Отправить на проверку»**.
 
-1. Скачайте готовый файл из кабинета и посмотрите строку вида
-   `ssaaq.yandex.ru, 123456789, DIRECT`.
-2. В своём репозитории откройте `docs/app-ads.txt`, замените `ВАШ_PUBLISHER_ID`
-   на номер из кабинета и закоммитьте:
+Файл уже опубликован и содержит вашу строку `yandex.com, 110347355, DIRECT`
+(её выдаёт кабинет: кнопка скачивания готового фрагмента). Проверка идёт раз в сутки,
+статус обновится в течение дня. Дополнительно убедитесь, что сайт
+`https://kirillpetrov08.github.io` указан в карточке RuStore и в описании приложения —
+для RuStore РСЯ берёт контакты разработчика именно из описания.
 
-**Команда:**
+### 3.2 Контакты и политика в проекте — уже заполнены
 
-```bash
-git add docs/app-ads.txt
-git -c user.name="Ваше Имя" -c user.email="ваш@email" commit -m "app-ads.txt: publisher ID из кабинета РСЯ"
-git push
-```
+Заменить ничего не нужно, значения уже боевые:
 
-3. Проверка: откройте <https://kirillpetrov08.github.io/yandex2/app-ads.txt> — строка
-   должна быть с вашим номером. РСЯ проверяет файл примерно раз в сутки.
-
-### 3.2 Заменить свою почту
-
-Почта `support.converterplus@gmail.com` сейчас стоит заглушкой. Она нужна в трёх местах:
-в приложении (пункт «Написать разработчику»), в политике и в текстах магазина.
-
-**Команда (Windows) — найти все места:**
-
-```cmd
-findstr /s /n /c:"support.converterplus@gmail.com" app\src\main\java\*.kt docs\privacy_policy.html docs\STORE_TEXTS.md
-```
-
-**Что ввести:** в каждом найденном файле замените адрес на свою реальную почту:
-
-| Файл | Строка |
+| Файл | Значение |
 |---|---|
-| `app/src/main/java/com/converterplus/app/Config.kt` | `const val SUPPORT_EMAIL = "ваша@почта"` |
-| `docs/privacy_policy.html` | две ссылки `mailto:` (в начале и в разделе контактов) |
-| `docs/STORE_TEXTS.md` | блоки «СВЯЗЬ» и «Поддержка» (2 места) |
+| `app/src/main/java/com/converterplus/app/Config.kt` | `SUPPORT_EMAIL = "kirillpetrov08@gmail.com"`, `PRIVACY_POLICY_URL` → опубликованная страница |
+| `docs/privacy_policy.html` | копия опубликованной политики, почта `kirillpetrov08@gmail.com` |
+| `docs/STORE_TEXTS.md` | почта, сайт и ссылка на политику в описаниях для Google Play и RuStore |
 
-После правки `Config.kt` приложение надо пересобрать (шаг 5).
-
-**Проверка:**
+**Проверка, что заглушек не осталось:**
 
 ```cmd
-findstr /s /n /c:"converterplus@gmail.com" app\src\main\java\*.kt docs\*.md docs\*.html
+findstr /s /n /c:"support.converterplus" /c:"ВАШ_" /c:"example.com" app\src\main\java\*.kt docs\*.html docs\STORE_TEXTS.md
 ```
+
+Команда не должна ничего найти: в коде, политике и текстах магазинов стоят настоящие
+контакты и адреса. Если будете менять почту или адрес страницы — после правки `Config.kt`
+приложение надо пересобрать (шаг 5).
 
 Команда ничего не должна найти.
 
@@ -663,8 +648,8 @@ rem --- 1. Ключ подписи (один раз на проект) ---
 rem --- 2. Секрет KEYSTORE_BASE64: одна строка вывода, копировать целиком в GitHub ---
 powershell -NoProfile -Command "[Convert]::ToBase64String([IO.File]::ReadAllBytes('app-signing.keystore'))"
 
-rem --- 3. Найти незакрытые заглушки ---
-findstr /s /n /c:"support.converterplus@gmail.com" /c:"ВАШ_" /c:"demo-" app\src\main\java\*.kt gradle.properties docs\app-ads.txt
+rem --- 3. Найти незакрытые заглушки (ничего найти не должна) ---
+findstr /s /n /c:"support.converterplus" /c:"ВАШ_" /c:"example.com" app\src\main\java\*.kt docs\*.html docs\STORE_TEXTS.md
 
 rem --- 4. Тесты и отладочная сборка ---
 gradlew.bat testDebugUnitTest assembleDebug

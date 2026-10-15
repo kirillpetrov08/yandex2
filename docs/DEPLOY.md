@@ -123,14 +123,16 @@ GitHub → ваш репозиторий → `Add file` → `Create new file` �
 
 ## 5. Политика конфиденциальности
 
-1. Заменить `support.converterplus@gmail.com` в `Config.kt` и в `docs/privacy_policy.html`
-   на свою почту.
-2. Опубликовать `docs/privacy_policy.html`. Проще всего — GitHub Pages: репозиторий →
-   Settings → Pages → Source «Deploy from a branch», Branch `main`, Folder `/docs` → Save.
-   Тогда страница открывается по адресу
-   `https://kirillpetrov08.github.io/yandex2/privacy_policy.html` — он уже вписан
-   в `Config.PRIVACY_POLICY_URL`. Любой другой хостинг тоже подойдёт: главное, чтобы ссылка
-   открывалась без авторизации, и в `Config.kt` был именно этот адрес.
+Политика конфиденциальности и контакты уже опубликованы — делать ничего не нужно:
+
+- страница: `https://kirillpetrov08.github.io/converterplus/privacy-policy.html`
+  (репозиторий `kirillpetrov08.github.io`, файл `converterplus/privacy-policy.html`);
+- почта в приложении: `Config.SUPPORT_EMAIL = "kirillpetrov08@gmail.com"`;
+- `app-ads.txt`: `https://kirillpetrov08.github.io/app-ads.txt` (`yandex.com, 110347355, DIRECT`).
+
+Копии для истории лежат в этом репозитории: `docs/privacy_policy.html` и `docs/app-ads.txt`.
+Если будете менять текст политики — правьте обе версии и не забудьте, что адрес страницы
+зашит в `Config.PRIVACY_POLICY_URL`.
 
 ---
 
