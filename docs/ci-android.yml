@@ -111,8 +111,14 @@ jobs:
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
+          # Без секретов ключа AGP называет файл app-release-unsigned.apk: он годится
+          # для проверок, но в магазин его не примут (docs/CI_BUILD.md, шаг B).
+          if [ ! -f "$APK" ] && [ -f "app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            APK=app/build/outputs/apk/release/app-release-unsigned.apk
+            echo "::warning title=APK без подписи::Собран $APK — секреты KEYSTORE_* не заданы, магазин такой файл не примет."
+          fi
           if [ ! -f "$APK" ]; then
-            echo "::error title=APK не найден::Сборка не создала $APK"
+            echo "::error title=APK не найден::Сборка не создала ни app-release.apk, ни app-release-unsigned.apk"
             exit 1
           fi
           echo "APK: $APK ($(du -h "$APK" | cut -f1))"
@@ -217,6 +223,7 @@ jobs:
           name: release-apk
           path: |
             app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/release/app-release-unsigned.apk
             app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
