@@ -366,6 +366,7 @@ adb logcat -s ConverterAds:V
 | `git push` с `.github/workflows/...` отклонён | у токена/бота нет права `workflows` | создавать и обновлять файл только через веб-интерфейс |
 | `::error` про `ads.testMode` или ID блока | в `gradle.properties` тестовый режим или демо-ID | привести к `ads.testMode=false` и `R-M-20230616-2/-4/-7` |
 | `::error title=APK не подписан` | неверный пароль, alias или секрет не в репозитории | проверить `KEYSTORE_PASSWORD`, `KEY_ALIAS=sign`, `KEY_PASSWORD`; убедиться, что секреты добавлены в **репозиторий**, а не в Environment |
+| `:app:packageRelease FAILED`, `SigningConfig "release" is missing required property "keyPassword"` | Gradle не получил одно из четырёх значений подписи. В коде для этого случая есть ранняя проверка: если увидите её текст («Секреты подписи пришли не полностью…»), в нём перечислено, чего не хватает | сверить имена секретов репозитория буква в букву (шаг B); если в тексте проверки всё перечисленное заполнено — значит поле потерялось при присваивании, ищите в `app/build.gradle.kts` строку вида `x = x` в блоке `signingConfigs` |
 | `::warning` «Секрет KEYSTORE_BASE64 пуст» | секрет не добавлен | шаг B |
 | `Could not find com.yandex.android:mobileads:8.6.0` | репозитории Maven | проверить, что в `settings.gradle.kts` есть `google()`, `mavenCentral()`, `jitpack`; повторить прогон (иногда сбой сети) |
 | Упали тесты | в отчёте `test-report` видно какой тест | посмотреть отчёт, править код, запушить снова |

@@ -62,14 +62,28 @@ if (versionCodeOverride != null || versionNameOverride != null) {
 
 // ---------------------------------------------------------------------------
 // Подпись релиза. Секреты приходят из переменных окружения (CI) или из shell.
-// Если секретов нет — сборка проходит, но AAB остаётся неподписанным.
+// Если секретов нет — сборка проходит, но APK и AAB остаются неподписанными.
+//
+// Имена локальных переменных НАМЕРЕННО отличаются от свойств SigningConfig
+// (keyAlias, keyPassword). Внутри `create("release") { ... }` правая часть
+// выражения `keyAlias = keyAlias` разрешается в свойство самого SigningConfig,
+// а не в переменную скрипта: получается присваивание null, и упаковка APK падает
+// с «SigningConfig "release" is missing required property "keyPassword"».
+// Поэтому: signingKeyAlias, signingKeyPassword и проверка ниже.
 // ---------------------------------------------------------------------------
 val keystoreFilePath: String? = System.getenv("KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
 val keystorePassword: String? = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
-val keyAlias: String? = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
-val keyPassword: String? = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
-val hasSigningSecrets: Boolean = keystoreFilePath != null && keystorePassword != null &&
-    keyAlias != null && keyPassword != null
+val signingKeyAlias: String? = System.getenv("KEY_ALIAS")?.takeIf { it.isNotBlank() }
+val signingKeyPassword: String? = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+
+/** Какие именно секреты не доехали — чтобы в логе было видно, что дописать. */
+val missingSigningEnv: List<String> = listOfNotNull(
+    "KEYSTORE_FILE".takeIf { keystoreFilePath == null },
+    "KEYSTORE_PASSWORD".takeIf { keystorePassword == null },
+    "KEY_ALIAS".takeIf { signingKeyAlias == null },
+    "KEY_PASSWORD".takeIf { signingKeyPassword == null },
+)
+val hasSigningSecrets: Boolean = missingSigningEnv.isEmpty()
 
 android {
     namespace = "com.converterplus.app"
@@ -99,8 +113,8 @@ android {
                 // Именно rootProject.file(): путь задаётся от корня репозитория, иначе CI падает.
                 storeFile = rootProject.file(keystoreFilePath!!)
                 storePassword = keystorePassword
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPassword
+                this.keyAlias = signingKeyAlias
+                this.keyPassword = signingKeyPassword
             }
         }
     }
@@ -121,8 +135,8 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             } else {
                 logger.warn(
-                    "AAB не подписан, для магазина нужны секреты: " +
-                        "KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD",
+                    "APK и AAB будут без подписи: не заданы " + missingSigningEnv.joinToString(", ") +
+                        ". В RuStore такой файл не примут — см. docs/CI_BUILD.md, шаг B.",
                 )
             }
         }
@@ -150,6 +164,27 @@ android {
     lint {
         abortOnError = false
         warningsAsErrors = false
+    }
+
+    // Проверяем, что четыре поля SigningConfig действительно заполнились: читаем их
+    // обратно и падаем с понятным текстом. Без этой проверки опечатка в именах выше
+    // доходит до AGP и падает уже на упаковке APK — «SigningConfig "release" is missing
+    // required property "keyPassword"» — без указания на настоящую причину.
+    if (hasSigningSecrets) {
+        val releaseSigning = signingConfigs.getByName("release")
+        val emptyFields = listOfNotNull(
+            "storeFile (путь KEYSTORE_FILE)".takeIf { releaseSigning.storeFile == null },
+            "storePassword (секрет KEYSTORE_PASSWORD)".takeIf { releaseSigning.storePassword.isNullOrEmpty() },
+            "keyAlias (секрет KEY_ALIAS)".takeIf { releaseSigning.keyAlias.isNullOrEmpty() },
+            "keyPassword (секрет KEY_PASSWORD)".takeIf { releaseSigning.keyPassword.isNullOrEmpty() },
+        )
+        if (emptyFields.isNotEmpty()) {
+            throw GradleException(
+                "Секреты подписи пришли не полностью — не заполнено: " + emptyFields.joinToString(", ") +
+                    ". Проверьте имена секретов репозитория (docs/CI_BUILD.md, шаг B): " +
+                    "KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS=sign, KEY_PASSWORD.",
+            )
+        }
     }
 }
 
