@@ -130,8 +130,10 @@ val versionNameOverride: String? =
     (System.getenv("VERSION_NAME") ?: (project.findProperty("versionName") as? String))
         ?.trim()?.takeIf { it.isNotEmpty() }
 
-val appVersionCode: Int = versionCodeOverride ?: 1
-val appVersionName: String = versionNameOverride ?: "1.0.0"
+// Версия по умолчанию поднята вместе с исправлениями крэшей: 1.0.1 / versionCode 2.
+// Магазин принимает загрузку только со строго большим versionCode.
+val appVersionCode: Int = versionCodeOverride ?: 2
+val appVersionName: String = versionNameOverride ?: "1.0.1"
 
 if (versionCodeOverride != null || versionNameOverride != null) {
     logger.lifecycle("Версия переопределена: versionCode=$appVersionCode, versionName=$appVersionName")

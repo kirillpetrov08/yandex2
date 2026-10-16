@@ -55,6 +55,21 @@ class FormattingTest {
     }
 
     @Test
+    fun `saving is never shown as hundred percent`() {
+        assertEquals("37 %", Formatting.formatSaved(37))
+        assertEquals("0 %", Formatting.formatSaved(0))
+        assertEquals(">99 %", Formatting.formatSaved(100))
+        assertEquals(">99 %", Formatting.formatSaved(120))
+        assertEquals("−435 %", Formatting.formatSaved(-435))
+    }
+
+    @Test
+    fun `growth wording`() {
+        assertEquals("на 435 %", Formatting.formatGrew(-435))
+        assertEquals("на 12 %", Formatting.formatGrew(-12))
+    }
+
+    @Test
     fun `duration formatting`() {
         assertEquals("0 сек", Formatting.formatDuration(0))
         assertEquals("45 сек", Formatting.formatDuration(45_000))

@@ -422,6 +422,10 @@ class ToolViewModel(
 
     private fun enqueue(watermark: Boolean) {
         val current = _state.value
+        // Новый id на каждый запуск. Раньше id жил до «новой конвертации», поэтому повторный
+        // прогон с теми же файлами писал в историю записи с уже занятыми id — список истории
+        // падал на одинаковых ключах LazyColumn.
+        requestId = ConversionWorker.newRequestId()
         val request = ConversionRequest(
             id = requestId,
             tool = tool,

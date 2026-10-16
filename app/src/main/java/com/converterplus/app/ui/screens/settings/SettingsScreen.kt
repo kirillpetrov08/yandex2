@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +39,7 @@ import com.converterplus.app.data.ThemeMode
 import com.converterplus.app.engine.Formatting
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.ui.components.SectionHeader
+import com.converterplus.app.ui.components.SingleChoiceChipRow
 import com.converterplus.app.ui.theme.AppDimens
 
 /**
@@ -72,9 +74,9 @@ fun SettingsScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = AppDimens.ScreenPadding)
-            .padding(bottom = 24.dp),
+            .padding(bottom = AppDimens.SpaceXl),
     ) {
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(AppDimens.SpaceM))
         Text(
             text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -195,13 +197,13 @@ private fun formatMinutes(minutes: Int): String = "$minutes мин"
 @Composable
 private fun Section(text: String, content: @Composable () -> Unit) {
     Column {
-        SectionHeader(text = text, modifier = Modifier.padding(top = 22.dp))
+        SectionHeader(text = text, modifier = Modifier.padding(top = AppDimens.SpaceXl))
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(vertical = 6.dp),
+                .padding(vertical = AppDimens.SpaceXs),
         ) {
             content()
         }
@@ -214,7 +216,7 @@ private fun ClickableRow(title: String, subtitle: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.RowPadding),
     ) {
         Text(text = title, style = MaterialTheme.typography.titleMedium)
         if (subtitle.isNotBlank()) {
@@ -233,7 +235,7 @@ private fun InfoRow(title: String, subtitle: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.RowPadding),
     ) {
         Text(text = title, style = MaterialTheme.typography.titleMedium)
         if (subtitle.isNotBlank()) {
@@ -252,11 +254,16 @@ private fun ToggleRow(title: String, checked: Boolean, onChange: (Boolean) -> Un
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(AppDimens.SpaceM))
         Switch(checked = checked, onCheckedChange = onChange)
     }
 }
@@ -272,7 +279,7 @@ private fun <T> OptionRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.RowPadding),
     ) {
         Text(text = title, style = MaterialTheme.typography.titleMedium)
         if (subtitle.isNotBlank()) {
@@ -282,34 +289,14 @@ private fun <T> OptionRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Row(
-            modifier = Modifier.padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            options.forEach { option ->
-                val isSelected = option.first == selected
-                Text(
-                    text = stringResource(id = option.second),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    modifier = Modifier
-                        .clip(MaterialTheme.shapes.small)
-                        .background(
-                            if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        )
-                        .clickable { onSelect(option.first) }
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                )
-            }
-        }
+        Spacer(Modifier.height(AppDimens.SpaceS))
+        // Чипы переносятся на следующую строку: длинное «Минимальный размер»
+        // раньше сжималось до одной буквы в строке.
+        SingleChoiceChipRow(
+            options = options.map { option -> option.first to stringResource(id = option.second) },
+            selected = selected,
+            onSelect = onSelect,
+        )
     }
 }
 

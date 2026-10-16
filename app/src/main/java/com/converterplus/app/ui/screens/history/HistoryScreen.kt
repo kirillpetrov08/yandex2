@@ -7,6 +7,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
@@ -66,6 +66,7 @@ import java.util.Locale
  * История конвертаций: поиск, фильтр по типу, свайп влево — удалить, вправо — поделиться.
  * Баннер живёт в нижнем баре Scaffold и карточки не перекрывает.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HistoryScreen(
     viewModel: HistoryViewModel,
@@ -113,23 +114,26 @@ fun HistoryScreen(
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = AppDimens.ScreenPadding, vertical = 10.dp),
+                    .padding(horizontal = AppDimens.ScreenPadding, vertical = AppDimens.SpaceM),
             )
 
             if (state.formats.isNotEmpty()) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = AppDimens.ScreenPadding),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                // Перенос строк вместо горизонтальной прокрутки: крайние фильтры
+                // больше не обрезаны краем экрана.
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.ScreenPadding),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
                 ) {
-                    item {
-                        FilterChip(
-                            selected = state.formatFilter == null,
-                            onClick = { viewModel.setFormatFilter(null) },
-                            label = { Text(stringResource(R.string.history_filter_all)) },
-                            shape = MaterialTheme.shapes.small,
-                        )
-                    }
-                    items(state.formats, key = { it }) { format ->
+                    FilterChip(
+                        selected = state.formatFilter == null,
+                        onClick = { viewModel.setFormatFilter(null) },
+                        label = { Text(stringResource(R.string.history_filter_all)) },
+                        shape = MaterialTheme.shapes.small,
+                    )
+                    state.formats.forEach { format ->
                         FilterChip(
                             selected = state.formatFilter == format,
                             onClick = {
@@ -157,9 +161,9 @@ fun HistoryScreen(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
                         horizontal = AppDimens.ScreenPadding,
-                        vertical = 10.dp,
+                        vertical = AppDimens.SpaceM,
                     ),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
                 ) {
                     itemsIndexed(state.entries, key = { _, entry -> entry.id }) { _, entry ->
                         SwipeableHistoryCard(
@@ -250,7 +254,7 @@ private fun HistoryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = AppDimens.CardElevation),
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(AppDimens.CardPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -270,7 +274,7 @@ private fun HistoryCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = AppDimens.SpaceM),
             ) {
                 Text(
                     text = entry.fileName,
@@ -296,9 +300,17 @@ private fun HistoryCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (entry.status == HistoryStatus.READY) {
-                androidx.compose.material3.TextButton(onClick = onSave) {
-                    Text(stringResource(R.string.action_save))
+            // Кэш результатов чистится через сутки: если файла уже нет,
+            // кнопка «Сохранить» только вводила бы в заблуждение.
+            val fileAvailable = remember(entry.localPath, entry.status) {
+                entry.status != HistoryStatus.READY || entry.localPath?.let { File(it).exists() } == true
+            }
+            if (entry.status == HistoryStatus.READY && fileAvailable) {
+                androidx.compose.material3.TextButton(
+                    onClick = onSave,
+                    modifier = Modifier.height(AppDimens.MinTouchTarget),
+                ) {
+                    Text(stringResource(R.string.action_save), maxLines = 1)
                 }
             }
         }

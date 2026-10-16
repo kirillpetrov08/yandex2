@@ -14,13 +14,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -28,7 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +61,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,10 +81,13 @@ import com.converterplus.app.storage.FileSaver
 import com.converterplus.app.ui.components.AppBottomSheet
 import com.converterplus.app.ui.components.CircleProgress
 import com.converterplus.app.ui.components.EmptyState
+import com.converterplus.app.ui.components.FileCaption
 import com.converterplus.app.ui.components.FilePreview
 import com.converterplus.app.ui.components.FormatChipRow
 import com.converterplus.app.ui.components.OrderedThumbnails
 import com.converterplus.app.ui.components.SectionHeader
+import com.converterplus.app.ui.components.SingleChoiceChipRow
+import com.converterplus.app.ui.components.SelectableChipRow
 import com.converterplus.app.ui.components.StatRow
 import com.converterplus.app.ui.components.pressable
 import com.converterplus.app.ui.components.rememberPressableSource
@@ -352,6 +359,7 @@ fun ToolScreen(
         ) {
             ResultSheetContent(
                 result = result,
+                tool = state.tool,
                 withWatermark = state.watermark && Capabilities.supportsWatermark(state.tool),
                 onSave = viewModel::saveResult,
                 onShare = viewModel::shareResult,
@@ -394,8 +402,9 @@ private fun ToolContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = AppDimens.ScreenPadding)
-            .padding(bottom = AppDimens.BannerSafeGap),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(top = AppDimens.SpaceXs, bottom = AppDimens.BannerSafeGap),
+        // Единый шаг между блоками: раньше отступы «гуляли» от 8 до 16 dp.
+        verticalArrangement = Arrangement.spacedBy(AppDimens.BlockGap),
     ) {
         if (state.inputs.isEmpty()) {
             PickZone(onClick = onPickFile, busy = state.busy, tool = state.tool)
@@ -430,7 +439,7 @@ private fun ToolContent(
                             text = stringResource(id = reason),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier.padding(top = AppDimens.SpaceS),
                         )
                     }
             }
@@ -462,13 +471,19 @@ private fun ToolContent(
  * Две маленькие кнопки под зоной выбора: «Из галереи» и «Из файлов».
  * Для PDF, аудио и видео галерея бессмысленна — остаётся только системный выбор файлов.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SourceButtons(
     tool: ToolKind,
     onGallery: () -> Unit,
     onFiles: () -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    // FlowRow, а не Row: на узких экранах две кнопки не влезают в строку и текст в них сжимался.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+    ) {
         if (Capabilities.hasGallerySource(tool)) {
             OutlinedButton(onClick = onGallery, shape = MaterialTheme.shapes.small) {
                 Icon(
@@ -476,8 +491,12 @@ private fun SourceButtons(
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                 )
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.action_from_gallery))
+                Spacer(Modifier.size(AppDimens.SpaceS))
+                Text(
+                    text = stringResource(R.string.action_from_gallery),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         OutlinedButton(onClick = onFiles, shape = MaterialTheme.shapes.small) {
@@ -486,8 +505,12 @@ private fun SourceButtons(
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
             )
-            Spacer(Modifier.size(8.dp))
-            Text(stringResource(R.string.action_from_files))
+            Spacer(Modifier.size(AppDimens.SpaceS))
+            Text(
+                text = stringResource(R.string.action_from_files),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -533,12 +556,12 @@ private fun PickZone(onClick: () -> Unit, busy: Boolean, tool: ToolKind) {
                     modifier = Modifier.size(28.dp),
                 )
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(AppDimens.SpaceM))
             Text(
                 text = stringResource(R.string.tool_pick_file_hint),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(AppDimens.SpaceXs))
             Text(
                 text = stringResource(
                     id = if (tool == ToolKind.PDF_TO_IMAGES) R.string.action_from_files
@@ -597,31 +620,35 @@ private fun SelectedFilesBlock(
 ) {
     val first = state.inputs.first()
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.BlockGap)) {
         FilePreview(file = first, tool = state.tool)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = first.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = Formatting.formatBytes(first.sizeBytes),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Имя и размер — отдельной колонкой, кнопка «Заменить» больше не сжимает текст.
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = first.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = Formatting.formatBytes(first.sizeBytes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+            Spacer(Modifier.width(AppDimens.SpaceM))
             OutlinedButton(
                 onClick = onPickFile,
                 shape = MaterialTheme.shapes.small,
-                modifier = Modifier.padding(start = 10.dp),
+                modifier = Modifier.height(AppDimens.MinTouchTarget),
             ) {
-                Text(stringResource(R.string.action_replace))
+                Text(stringResource(R.string.action_replace), maxLines = 1)
             }
         }
 
@@ -636,26 +663,27 @@ private fun SelectedFilesBlock(
         }
 
         if (state.isMultiFile) {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS)) {
                 Text(
                     text = stringResource(R.string.tool_files_count, state.inputs.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(8.dp))
                 SectionHeader(text = stringResource(R.string.tool_order_title))
                 Text(
                     text = stringResource(R.string.tool_order_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
                 )
                 OrderedThumbnails(
                     items = state.inputs,
                     onReorder = viewModel::moveInput,
                     onRemove = viewModel::removeInput,
                 )
-                TextButton(onClick = onPickFile) {
+                TextButton(
+                    onClick = onPickFile,
+                    modifier = Modifier.height(AppDimens.MinTouchTarget),
+                ) {
                     Text(stringResource(R.string.tool_add_more))
                 }
             }
@@ -667,24 +695,20 @@ private fun SelectedFilesBlock(
 private fun PagesSection(state: ToolUiState, viewModel: ToolViewModel, titleRes: Int) {
     Column {
         SectionHeader(text = stringResource(titleRes))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = state.pagesMode == PagesMode.ALL,
-                onClick = viewModel::selectAllPages,
-                label = { Text(stringResource(R.string.tool_pages_all)) },
-                shape = MaterialTheme.shapes.small,
-            )
-            FilterChip(
-                selected = state.pagesMode == PagesMode.SELECTED,
-                onClick = { viewModel.selectPagesMode(PagesMode.SELECTED) },
-                label = { Text(stringResource(R.string.tool_pages_pick)) },
-                shape = MaterialTheme.shapes.small,
-            )
-        }
+        SingleChoiceChipRow(
+            options = listOf(
+                PagesMode.ALL to stringResource(R.string.tool_pages_all),
+                PagesMode.SELECTED to stringResource(R.string.tool_pages_pick),
+            ),
+            selected = state.pagesMode,
+            onSelect = { mode ->
+                if (mode == PagesMode.ALL) viewModel.selectAllPages() else viewModel.selectPagesMode(mode)
+            },
+        )
 
         val pageCount = state.pageCount
         if (state.pagesMode == PagesMode.SELECTED && pageCount != null) {
-            Column(modifier = Modifier.padding(top = 10.dp)) {
+            Column(modifier = Modifier.padding(top = AppDimens.SpaceM)) {
                 Text(
                     text = stringResource(R.string.tool_pages_count, state.selectedPages.size),
                     style = MaterialTheme.typography.bodySmall,
@@ -698,46 +722,33 @@ private fun PagesSection(state: ToolUiState, viewModel: ToolViewModel, titleRes:
         // У PDF → Изображения разрешение рендера страниц выбирается свободно.
         // У OCR точность повышается только за rewarded-видео (см. OcrPrecisionSection).
         if (state.tool == ToolKind.PDF_TO_IMAGES) {
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = state.dpi == ConversionRequest.DPI_LOW,
-                    onClick = { viewModel.selectDpi(ConversionRequest.DPI_LOW) },
-                    label = { Text("${ConversionRequest.DPI_LOW} dpi") },
-                    shape = MaterialTheme.shapes.small,
-                )
-                FilterChip(
-                    selected = state.dpi == ConversionRequest.DPI_HIGH,
-                    onClick = { viewModel.selectDpi(ConversionRequest.DPI_HIGH) },
-                    label = { Text("${ConversionRequest.DPI_HIGH} dpi") },
-                    shape = MaterialTheme.shapes.small,
-                )
-            }
+            Spacer(Modifier.height(AppDimens.SpaceM))
+            SingleChoiceChipRow(
+                options = listOf(
+                    ConversionRequest.DPI_LOW to "${ConversionRequest.DPI_LOW} dpi",
+                    ConversionRequest.DPI_HIGH to "${ConversionRequest.DPI_HIGH} dpi",
+                ),
+                selected = state.dpi,
+                onSelect = viewModel::selectDpi,
+            )
         }
     }
 }
 
+/** Номера страниц: сетка с переносом, чтобы кнопки не сжимались на узком экране. */
 @Composable
 private fun PageChips(count: Int, selected: Set<Int>, onToggle: (Int) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .heightIn(max = 168.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        (1..count).chunked(5).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { page ->
-                    FilterChip(
-                        selected = page in selected,
-                        onClick = { onToggle(page) },
-                        label = { Text(page.toString()) },
-                        shape = MaterialTheme.shapes.small,
-                    )
-                }
-            }
-        }
+        SelectableChipRow(
+            options = (1..count).map { page -> page to page.toString() },
+            isSelected = { page -> page in selected },
+            onSelect = onToggle,
+        )
     }
 }
 
@@ -745,20 +756,14 @@ private fun PageChips(count: Int, selected: Set<Int>, onToggle: (Int) -> Unit) {
 private fun PageSizeSection(state: ToolUiState, viewModel: ToolViewModel) {
     Column {
         SectionHeader(text = stringResource(R.string.tool_page_size))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = state.pdfPageSize == PdfPageSize.A4,
-                onClick = { viewModel.selectPageSize(PdfPageSize.A4) },
-                label = { Text(stringResource(R.string.tool_page_size_a4)) },
-                shape = MaterialTheme.shapes.small,
-            )
-            FilterChip(
-                selected = state.pdfPageSize == PdfPageSize.FIT_IMAGE,
-                onClick = { viewModel.selectPageSize(PdfPageSize.FIT_IMAGE) },
-                label = { Text(stringResource(R.string.tool_page_size_fit)) },
-                shape = MaterialTheme.shapes.small,
-            )
-        }
+        SingleChoiceChipRow(
+            options = listOf(
+                PdfPageSize.A4 to stringResource(R.string.tool_page_size_a4),
+                PdfPageSize.FIT_IMAGE to stringResource(R.string.tool_page_size_fit),
+            ),
+            selected = state.pdfPageSize,
+            onSelect = viewModel::selectPageSize,
+        )
     }
 }
 
@@ -798,26 +803,19 @@ private fun OcrPrecisionSection(state: ToolUiState, onWatch: () -> Unit) {
 private fun QualitySection(state: ToolUiState, viewModel: ToolViewModel) {
     Column {
         SectionHeader(text = stringResource(R.string.tool_quality))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QualityPreset.entries.forEach { preset ->
-                FilterChip(
-                    selected = state.quality == preset,
-                    onClick = { viewModel.selectQuality(preset) },
-                    label = {
-                        Text(
-                            stringResource(
-                                id = when (preset) {
-                                    QualityPreset.MAX -> R.string.settings_quality_max
-                                    QualityPreset.BALANCED -> R.string.settings_quality_balanced
-                                    QualityPreset.MIN_SIZE -> R.string.settings_quality_min
-                                },
-                            ),
-                        )
+        SingleChoiceChipRow(
+            options = QualityPreset.entries.map { preset ->
+                preset to stringResource(
+                    id = when (preset) {
+                        QualityPreset.MAX -> R.string.settings_quality_max
+                        QualityPreset.BALANCED -> R.string.settings_quality_balanced
+                        QualityPreset.MIN_SIZE -> R.string.settings_quality_min
                     },
-                    shape = MaterialTheme.shapes.small,
                 )
-            }
-        }
+            },
+            selected = state.quality,
+            onSelect = viewModel::selectQuality,
+        )
     }
 }
 
@@ -848,7 +846,7 @@ private fun ConvertBar(
             state.isRunning -> {
                 val percent = (state.progress as? ProgressState.Running)?.percent ?: 0
                 CircleProgress(percent = percent, modifier = Modifier.padding(vertical = 8.dp))
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(AppDimens.SpaceM))
                 Text(text = stringResource(R.string.tool_converting), style = MaterialTheme.typography.titleMedium)
                 if (secondsRunning >= 5) {
                     Text(
@@ -910,6 +908,7 @@ private fun ConvertBar(
 @Composable
 private fun ResultSheetContent(
     result: ResultUiState,
+    tool: ToolKind,
     withWatermark: Boolean,
     onSave: () -> Unit,
     onShare: () -> Unit,
@@ -917,7 +916,7 @@ private fun ResultSheetContent(
     onRemoveWatermark: () -> Unit,
     onNewConversion: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.BlockGap)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -932,117 +931,161 @@ private fun ResultSheetContent(
                     tint = com.converterplus.app.ui.theme.SuccessGreen,
                 )
             }
-            Spacer(Modifier.size(12.dp))
-            Text(
-                text = stringResource(R.string.tool_result_title),
-                style = MaterialTheme.typography.headlineMedium,
-            )
+            Spacer(Modifier.size(AppDimens.SpaceM))
+            Column {
+                Text(
+                    text = stringResource(R.string.tool_result_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+                Text(
+                    text = stringResource(R.string.tool_result_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         val first = result.artifacts.firstOrNull()
         if (first != null) {
-            FilePreview(
-                file = PickedFile(
-                    localPath = first.path,
-                    displayName = first.name,
-                    sizeBytes = first.bytes,
-                    mimeType = FileSaver.mimeTypeOf(first.name),
-                ),
-                tool = ToolKind.IMAGES,
-                modifier = Modifier.height(180.dp),
-            )
-        }
-
-        StatRow(
-            label = stringResource(R.string.tool_result_before),
-            value = Formatting.formatBytes(result.inputBytes),
-        )
-        StatRow(
-            label = stringResource(R.string.tool_result_after),
-            value = Formatting.formatBytes(result.outputBytes),
-        )
-        Formatting.savedPercent(result.inputBytes, result.outputBytes)?.let { percent ->
-            StatRow(
-                label = stringResource(R.string.tool_result_saved),
-                value = Formatting.formatPercent(percent),
-                accent = true,
-            )
-        }
-        if (result.artifacts.size > 1) {
-            StatRow(
-                label = stringResource(R.string.tool_result_files, result.artifacts.size),
-                value = "",
-            )
-        }
-
-        if (withWatermark) {
-            Text(
-                text = stringResource(R.string.tool_result_watermark_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OutlinedButton(
-                onClick = onRemoveWatermark,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_play),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS)) {
+                FilePreview(
+                    file = PickedFile(
+                        localPath = first.path,
+                        displayName = first.name,
+                        sizeBytes = first.bytes,
+                        mimeType = FileSaver.mimeTypeOf(first.name),
+                    ),
+                    // Настоящий инструмент и расширение файла: превью больше не «слепое».
+                    tool = tool,
+                    modifier = Modifier.heightIn(min = 150.dp, max = 240.dp),
                 )
-                Spacer(Modifier.size(8.dp))
-                Text(stringResource(R.string.action_remove_watermark))
+                FileCaption(
+                    name = first.name,
+                    size = Formatting.formatBytes(first.bytes),
+                )
+                if (result.artifacts.size > 1) {
+                    Text(
+                        text = stringResource(R.string.tool_result_files, result.artifacts.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
 
-        Button(
-            onClick = onSave,
-            enabled = !result.isSaved,
-            shape = MaterialTheme.shapes.medium,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp),
+                .clip(MaterialTheme.shapes.large)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceXs),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_download),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
+            StatRow(
+                label = stringResource(R.string.tool_result_before),
+                value = Formatting.formatBytes(result.inputBytes),
             )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = stringResource(
-                    id = if (result.artifacts.size > 1) R.string.action_save_all else R.string.action_save,
-                ),
+            StatRow(
+                label = stringResource(R.string.tool_result_after),
+                value = Formatting.formatBytes(result.outputBytes),
             )
+            val saved = Formatting.savedPercent(result.inputBytes, result.outputBytes)
+            if (saved != null) {
+                val grew = saved < 0
+                StatRow(
+                    label = stringResource(
+                        id = if (grew) R.string.tool_result_grew else R.string.tool_result_saved,
+                    ),
+                    value = if (grew) Formatting.formatGrew(saved) else Formatting.formatSaved(saved),
+                    accent = !grew,
+                )
+            }
         }
 
-        OutlinedButton(
-            onClick = onShare,
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_share),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(stringResource(R.string.action_share))
+        if (withWatermark) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS)) {
+                Text(
+                    text = stringResource(R.string.tool_result_watermark_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = onRemoveWatermark,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_play),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.size(AppDimens.SpaceS))
+                    Text(stringResource(R.string.action_remove_watermark))
+                }
+            }
         }
 
-        TextButton(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                stringResource(
-                    id = if (result.isSaved) R.string.action_open_file else R.string.action_open_folder,
-                ),
-            )
-        }
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceM)) {
+            Button(
+                onClick = onSave,
+                enabled = !result.isSaved,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_download),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(AppDimens.SpaceS))
+                Text(
+                    text = stringResource(
+                        id = if (result.artifacts.size > 1) R.string.action_save_all else R.string.action_save,
+                    ),
+                )
+            }
 
-        TextButton(onClick = onNewConversion, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.tool_pick_file_title))
+            OutlinedButton(
+                onClick = onShare,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_share),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(AppDimens.SpaceS))
+                Text(stringResource(R.string.action_share))
+            }
+
+            TextButton(
+                onClick = onOpen,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppDimens.MinTouchTarget),
+            ) {
+                Text(
+                    stringResource(
+                        id = if (result.isSaved) R.string.action_open_file else R.string.action_open_folder,
+                    ),
+                )
+            }
+
+            TextButton(
+                onClick = onNewConversion,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppDimens.MinTouchTarget),
+            ) {
+                Text(stringResource(R.string.tool_pick_file_title))
+            }
         }
     }
 }
