@@ -101,6 +101,25 @@ if exist "%KEYSTORE%" (
     echo.
 )
 
+rem --- 3b. Alias check ---------------------------------------------------------
+rem PEPK fails with "No key with alias" only AFTER the password prompt, so check
+rem the alias in advance: read the key entries and look for the needed alias.
+echo [3b/5] Checking alias "%ALIAS%" in %KEYSTORE%
+set "ALIASES_FILE=%TEMP%\rustore-aliases.txt"
+"%KEYTOOL%" -list -keystore "%KEYSTORE%" > "%ALIASES_FILE%" 2>&1
+if errorlevel 1 (
+    echo       WARNING: could not read the alias list, continuing anyway
+) else (
+    findstr /R /C:"^%ALIAS%," "%ALIASES_FILE%" >nul 2>&1
+    if errorlevel 1 (
+        echo ERROR: the key has no entry with alias "%ALIAS%". Entries present:
+        type "%ALIASES_FILE%"
+        echo        rerun with  --alias=^<name from the list above^>
+        exit /b 1
+    )
+    echo       alias found
+)
+
 rem --- 4. PEPK -> encrypted ZIP --------------------------------------------
 echo [4/5] Encrypting the app signing key with PEPK
 echo       enter the keystore password and the key password when asked
