@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.converterplus.app.Config
 import com.converterplus.app.R
+import com.converterplus.app.ui.theme.AppDimens
 import com.converterplus.app.ui.theme.QuickStartGradients
 
 private data class OnboardingPage(
@@ -201,29 +203,31 @@ private fun ConsentBlock(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp),
+            .padding(AppDimens.CardPadding),
     ) {
         Text(
             text = stringResource(R.string.onboarding_consent_title),
             style = MaterialTheme.typography.titleMedium,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(AppDimens.SpaceXs))
         Text(
             text = stringResource(R.string.onboarding_consent_text),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(AppDimens.SpaceM))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            // weight — иначе длинная подпись сжимает переключатель на узком экране.
             Text(
                 text = stringResource(R.string.onboarding_consent_switch),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(end = 12.dp),
+                modifier = Modifier.weight(1f),
             )
+            Spacer(Modifier.width(AppDimens.SpaceM))
             Switch(checked = personalized, onCheckedChange = onPersonalizedChange)
         }
         TextButton(onClick = onOpenPrivacy) {
