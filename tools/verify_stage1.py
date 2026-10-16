@@ -13,7 +13,8 @@
   9. Обязательные файлы сборки, воркфлоу и ключи рекламы.
  10. В .kts-файлах нет присваивания `x = x` (правая часть такого выражения внутри
      блока с получателем разрешается в свойство этого получателя, а не в переменную
-     скрипта, — так молча теряется значение ключа подписи).
+     скрипта, — так молча теряется значение ключа подписи) и нет обращений вида
+     `java.<пакет>`, которые в скрипте не компилируются без import.
  11. В GitHub Actions — компиляция и юнит-тесты, а ошибки выводятся аннотациями
      к прогону. Полный лог шага виден только после входа в аккаунт GitHub,
      аннотации же показываются всем и отдают точные файл и строку.
@@ -380,6 +381,10 @@ def check_placeholders() -> None:
                 errors.append(f"{rel(path)}:{number}: заглушка: {line.strip()}")
 
 
+# Скрипты Gradle, которые проверяем статически (см. пункты 8 и 9).
+KTS_FILES = ["app/build.gradle.kts", "build.gradle.kts", "settings.gradle.kts"]
+
+
 # ------------------------------------------------- 8. самоприсваивание в .kts
 def check_kts_self_assignments() -> None:
     """Ловит `x = x` в скриптах Gradle.
@@ -391,7 +396,7 @@ def check_kts_self_assignments() -> None:
     property "keyPassword"» — без намёка на настоящую причину.
     """
     pattern = re.compile(r"^\s*(?:this\.)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\1\s*$")
-    for name in ["app/build.gradle.kts", "build.gradle.kts", "settings.gradle.kts"]:
+    for name in KTS_FILES:
         path = os.path.join(ROOT, name)
         if not os.path.exists(path):
             continue
@@ -405,7 +410,33 @@ def check_kts_self_assignments() -> None:
                 )
 
 
-# ---------------------------------------------------------------- 9. тесты
+# ------------------------------------------------ 9. пакеты java.* в .kts
+def check_kts_java_packages() -> None:
+    """Ловит обращения вида `java.security.KeyStore` в скриптах Gradle.
+
+    В .kts-скрипте модуля имя `java` занято расширением Gradle (JavaPluginExtension),
+    поэтому `java.security…` не компилируется: «Unresolved reference: security».
+    Нужен обычный import в начале файла. Ошибка коварная: скрипт падает при
+    конфигурации проекта, то есть валит любой шаг CI, а не только сборку.
+    """
+    pattern = re.compile(r"(?<![\w.])java\.(?:io|nio|net|util|security|text|math|time|lang)\b")
+    for name in KTS_FILES:
+        path = os.path.join(ROOT, name)
+        if not os.path.exists(path):
+            continue
+        for number, line in enumerate(open(path, encoding="utf-8"), start=1):
+            if line.lstrip().startswith("import "):
+                continue
+            match = pattern.search(line)
+            if match:
+                errors.append(
+                    f"{name}:{number}: обращение `{match.group(0)}` не скомпилируется: в .kts "
+                    "имя `java` занято расширением Gradle. Добавьте import в начало файла "
+                    "(например, `import java.security.KeyStore`).",
+                )
+
+
+# ---------------------------------------------------------------- 10. тесты
 def count_tests() -> tuple[int, int]:
     methods = 0
     files = 0
@@ -418,7 +449,7 @@ def count_tests() -> tuple[int, int]:
     return files, methods
 
 
-# --------------------------------------------------------------- 10. сборка
+# --------------------------------------------------------------- 11. сборка
 def check_gradle() -> None:
     for required in [
         "settings.gradle.kts",
@@ -634,6 +665,7 @@ def main() -> int:
     check_balanced()
     check_placeholders()
     check_kts_self_assignments()
+    check_kts_java_packages()
     check_gradle()
     test_files, test_methods = count_tests()
 

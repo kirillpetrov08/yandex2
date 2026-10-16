@@ -1,4 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.File
+import java.io.IOException
+import java.security.GeneralSecurityException
+import java.security.KeyStore
+import java.security.MessageDigest
 
 plugins {
     id("com.android.application")
@@ -12,6 +17,44 @@ plugins {
 fun adProperty(key: String, default: String): String {
     val raw = project.findProperty(key) as? String
     return if (raw.isNullOrBlank()) default else raw.trim()
+}
+
+/**
+ * Печатает аннотацию GitHub Actions. Строка вида `::error title=…::текст` попадает
+ * в шапку прогона и в API прогона, поэтому причину падения видно даже там, где лог
+ * шага недоступен. Спецсимволы экранируются, как требует формат workflow-команд.
+ */
+fun ghAnnotation(kind: String, title: String, message: String) {
+    val safeTitle = title.replace("%", "%25").replace(",", "%2C").replace(":", "%3A")
+    val safeMessage = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    println("::$kind title=$safeTitle::$safeMessage")
+}
+
+/** Дописывает текст в раздел Summary прогона, если он доступен (в CI — да). */
+fun appendStepSummary(text: String) {
+    val path = System.getenv("GITHUB_STEP_SUMMARY")?.takeIf { it.isNotBlank() } ?: return
+    try {
+        File(path).appendText(text)
+    } catch (e: IOException) {
+        project.logger.warn("Не удалось дописать Summary ($path): ${e.message}")
+    }
+}
+
+/** Открывает хранилище ключей, перебирая типы: заданный, затем PKCS12 и JKS. */
+fun loadKeyStore(file: File, password: CharArray, preferredType: String?): Pair<KeyStore?, Exception?> {
+    var lastError: Exception? = null
+    for (type in listOfNotNull(preferredType, "PKCS12", "JKS").distinct()) {
+        try {
+            val store = KeyStore.getInstance(type)
+            file.inputStream().use { stream -> store.load(stream, password) }
+            return store to lastError
+        } catch (e: IOException) {
+            lastError = e
+        } catch (e: GeneralSecurityException) {
+            lastError = e
+        }
+    }
+    return null to lastError
 }
 
 val adsTestMode: Boolean = adProperty("ads.testMode", "true").toBoolean()
@@ -186,51 +229,72 @@ android {
             )
         }
 
-        // Дальше проверяем сам файл ключа теми же значениями, что уйдут в AGP: пароль
-        // хранилища, наличие алиаса, пароль ключа. Без этой проверки несовпадение алиаса
-        // всплывает только на упаковке APK, через несколько минут сборки:
-        // «No key with alias … found in keystore» — и по нему не понять, какие алиасы
-        // в файле вообще есть. Частый случай: ключ создан keytool без -alias sign
-        // (там алиас по умолчанию mykey) или мастером Android Studio.
-        val storeType = releaseSigning.storeType ?: java.security.KeyStore.getDefaultType()
-        val keystore = java.security.KeyStore.getInstance(storeType)
-        try {
-            releaseSigning.storeFile!!.inputStream().use { stream ->
-                keystore.load(stream, releaseSigning.storePassword!!.toCharArray())
-            }
-        } catch (e: java.io.IOException) {
-            throw GradleException(
-                "Не удалось открыть хранилище ключей (${releaseSigning.storeFile}) типом $storeType: " +
-                    "${e.message}. Проверьте секреты KEYSTORE_BASE64 и KEYSTORE_PASSWORD — " +
-                    "docs/CI_BUILD.md, шаг B.",
-                e,
-            )
+        // Дальше проверяем сам файл ключа теми же значениями, что уйдут в AGP: открываем
+        // хранилище, ищем алиас из секрета KEY_ALIAS, читаем приватный ключ паролем из
+        // KEY_PASSWORD. Без этой проверки расхождение алиаса всплывает только на упаковке
+        // APK, через несколько минут сборки: «No key with alias … found in keystore» — и по
+        // нему не видно, какие алиасы в файле есть. Частый случай: ключ создан keytool без
+        // «-alias sign» (там алиас по умолчанию mykey) или мастером Android Studio.
+        // Каждая неудача печатает аннотацию ::error — она видна и в шапке прогона.
+        val storeFile = releaseSigning.storeFile!!
+        val (keyStore, storeProblem) = loadKeyStore(
+            storeFile,
+            releaseSigning.storePassword!!.toCharArray(),
+            releaseSigning.storeType,
+        )
+        if (keyStore == null) {
+            val message = "Не удалось открыть хранилище ключей «${storeFile.name}» ни как PKCS12, " +
+                "ни как JKS: ${storeProblem?.message}. Проверьте секреты KEYSTORE_BASE64 " +
+                "(файл ключа в base64) и KEYSTORE_PASSWORD — docs/CI_BUILD.md, шаг B."
+            ghAnnotation("error", "Ключ подписи не открывается", message)
+            throw GradleException(message, storeProblem)
         }
 
         val requiredAlias = releaseSigning.keyAlias!!
-        if (!keystore.containsAlias(requiredAlias)) {
-            val available = keystore.aliases().toList().sorted().joinToString(", ")
+        if (!keyStore.containsAlias(requiredAlias)) {
+            val allAliases = keyStore.aliases().toList().sorted()
+            val keyAliases = allAliases.filter { keyStore.isKeyEntry(it) }
+            val available = (if (keyAliases.isNotEmpty()) keyAliases else allAliases)
+                .joinToString(", ")
                 .ifEmpty { "ни одного" }
-            throw GradleException(
-                "В ключе нет записи с алиасом «$requiredAlias» (секрет KEY_ALIAS). " +
-                    "Алиасы в файле: $available. " +
-                    "Настоящий алиас видно командой " +
-                    "`keytool -list -v -keystore app-signing.keystore` (строка «Alias name:», " +
-                    "нужна запись типа PrivateKeyEntry) — подставьте его в секрет KEY_ALIAS " +
-                    "или пересоздайте ключ с -alias sign. Подробно: docs/CI_BUILD.md, шаг B.",
+            val message = "В ключе нет записи с алиасом «$requiredAlias» (секрет KEY_ALIAS). " +
+                "Алиасы в файле: $available. Впишите нужный в секрет KEY_ALIAS " +
+                "(Settings → Secrets and variables → Actions → Update secret). " +
+                "Если записей нет вовсе — перезалейте KEYSTORE_BASE64 и KEYSTORE_PASSWORD. " +
+                "Подробно: docs/CI_BUILD.md, шаг B1."
+            ghAnnotation("error", "Алиас не найден в ключе", message)
+            appendStepSummary(
+                "\n### Ключ подписи\n\n" +
+                    "- алиас из секрета `KEY_ALIAS`: `$requiredAlias`\n" +
+                    "- алиасы в файле: `$available`\n",
             )
+            throw GradleException(message)
         }
 
         try {
-            keystore.getKey(requiredAlias, releaseSigning.keyPassword!!.toCharArray())
-        } catch (e: java.security.GeneralSecurityException) {
-            throw GradleException(
-                "Ключ «$requiredAlias» не открывается паролем из секрета KEY_PASSWORD: ${e.message}. " +
-                    "Для хранилища PKCS12 пароль ключа совпадает с паролем хранилища — " +
-                    "docs/CI_BUILD.md, шаг B.",
-                e,
-            )
+            keyStore.getKey(requiredAlias, releaseSigning.keyPassword!!.toCharArray())
+        } catch (e: GeneralSecurityException) {
+            val message = "Ключ «$requiredAlias» в файле есть, но не открывается паролем из " +
+                "секрета KEY_PASSWORD: ${e.message}. Для хранилища PKCS12 пароль ключа " +
+                "совпадает с паролем хранилища — docs/CI_BUILD.md, шаг B."
+            ghAnnotation("error", "Неверный пароль ключа", message)
+            throw GradleException(message, e)
         }
+
+        // Всё сошлось: печатаем отпечаток сертификата — его же показывают apksigner
+        // и keytool -list -v в строке SHA256, поэтому есть с чем сверить.
+        val certificate = keyStore.getCertificate(requiredAlias)
+        val fingerprint = certificate?.let { cert ->
+            MessageDigest.getInstance("SHA-256").digest(cert.encoded).joinToString(":") { byte ->
+                "%02X".format(byte)
+            }
+        } ?: "не определился"
+        ghAnnotation("notice", "Ключ подписи", "алиас «$requiredAlias», SHA-256: $fingerprint")
+        appendStepSummary(
+            "\n### Ключ подписи\n\n" +
+                "- алиас: `$requiredAlias`\n" +
+                "- SHA-256 сертификата: `$fingerprint`\n",
+        )
     }
 }
 
