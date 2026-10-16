@@ -185,6 +185,52 @@ android {
                     "KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS=sign, KEY_PASSWORD.",
             )
         }
+
+        // Дальше проверяем сам файл ключа теми же значениями, что уйдут в AGP: пароль
+        // хранилища, наличие алиаса, пароль ключа. Без этой проверки несовпадение алиаса
+        // всплывает только на упаковке APK, через несколько минут сборки:
+        // «No key with alias … found in keystore» — и по нему не понять, какие алиасы
+        // в файле вообще есть. Частый случай: ключ создан keytool без -alias sign
+        // (там алиас по умолчанию mykey) или мастером Android Studio.
+        val storeType = releaseSigning.storeType ?: java.security.KeyStore.getDefaultType()
+        val keystore = java.security.KeyStore.getInstance(storeType)
+        try {
+            releaseSigning.storeFile!!.inputStream().use { stream ->
+                keystore.load(stream, releaseSigning.storePassword!!.toCharArray())
+            }
+        } catch (e: java.io.IOException) {
+            throw GradleException(
+                "Не удалось открыть хранилище ключей (${releaseSigning.storeFile}) типом $storeType: " +
+                    "${e.message}. Проверьте секреты KEYSTORE_BASE64 и KEYSTORE_PASSWORD — " +
+                    "docs/CI_BUILD.md, шаг B.",
+                e,
+            )
+        }
+
+        val requiredAlias = releaseSigning.keyAlias!!
+        if (!keystore.containsAlias(requiredAlias)) {
+            val available = keystore.aliases().toList().sorted().joinToString(", ")
+                .ifEmpty { "ни одного" }
+            throw GradleException(
+                "В ключе нет записи с алиасом «$requiredAlias» (секрет KEY_ALIAS). " +
+                    "Алиасы в файле: $available. " +
+                    "Настоящий алиас видно командой " +
+                    "`keytool -list -v -keystore app-signing.keystore` (строка «Alias name:», " +
+                    "нужна запись типа PrivateKeyEntry) — подставьте его в секрет KEY_ALIAS " +
+                    "или пересоздайте ключ с -alias sign. Подробно: docs/CI_BUILD.md, шаг B.",
+            )
+        }
+
+        try {
+            keystore.getKey(requiredAlias, releaseSigning.keyPassword!!.toCharArray())
+        } catch (e: java.security.GeneralSecurityException) {
+            throw GradleException(
+                "Ключ «$requiredAlias» не открывается паролем из секрета KEY_PASSWORD: ${e.message}. " +
+                    "Для хранилища PKCS12 пароль ключа совпадает с паролем хранилища — " +
+                    "docs/CI_BUILD.md, шаг B.",
+                e,
+            )
+        }
     }
 }
 
