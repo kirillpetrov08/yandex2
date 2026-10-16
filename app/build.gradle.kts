@@ -251,48 +251,78 @@ android {
         }
 
         val requiredAlias = releaseSigning.keyAlias!!
-        if (!keyStore.containsAlias(requiredAlias)) {
-            val allAliases = keyStore.aliases().toList().sorted()
-            val keyAliases = allAliases.filter { keyStore.isKeyEntry(it) }
-            val available = (if (keyAliases.isNotEmpty()) keyAliases else allAliases)
-                .joinToString(", ")
-                .ifEmpty { "ни одного" }
-            val message = "В ключе нет записи с алиасом «$requiredAlias» (секрет KEY_ALIAS). " +
-                "Алиасы в файле: $available. Впишите нужный в секрет KEY_ALIAS " +
-                "(Settings → Secrets and variables → Actions → Update secret). " +
-                "Если записей нет вовсе — перезалейте KEYSTORE_BASE64 и KEYSTORE_PASSWORD. " +
-                "Подробно: docs/CI_BUILD.md, шаг B1."
-            ghAnnotation("error", "Алиас не найден в ключе", message)
-            appendStepSummary(
-                "\n### Ключ подписи\n\n" +
-                    "- алиас из секрета `KEY_ALIAS`: `$requiredAlias`\n" +
-                    "- алиасы в файле: `$available`\n",
-            )
-            throw GradleException(message)
+        val resolvedAlias: String = if (keyStore.containsAlias(requiredAlias)) {
+            requiredAlias
+        } else {
+            val keyAliases = keyStore.aliases().toList().filter { keyStore.isKeyEntry(it) }.sorted()
+            if (keyAliases.size == 1) {
+                // В ключе ровно одна запись с приватным ключом — алиас однозначен, поэтому
+                // не срываем релиз из-за расхождения с секретом: подписываем ею и говорим,
+                // что поправить. Ярлык внутри файла на подпись не влияет: магазин сверяет
+                // сертификат, а не имя записи.
+                val only = keyAliases.first()
+                val message = "Секрет KEY_ALIAS = «$requiredAlias», но в ключе такой записи нет. " +
+                    "В файле ровно одна запись с ключом — «$only», подписываю ею. " +
+                    "Чтобы убрать расхождение, поставьте KEY_ALIAS=$only " +
+                    "(Settings → Secrets and variables → Actions → Update secret). " +
+                    "Подробно: docs/CI_BUILD.md, шаг B1."
+                ghAnnotation("warning", "KEY_ALIAS не совпал с ключом", message)
+                appendStepSummary(
+                    "\n### Ключ подписи\n\n" +
+                        "- секрет `KEY_ALIAS`: `$requiredAlias` — такой записи в ключе нет\n" +
+                        "- используется алиас: `$only`\n",
+                )
+                only
+            } else {
+                val allAliases = keyStore.aliases().toList().sorted()
+                val available = (if (keyAliases.isNotEmpty()) keyAliases else allAliases)
+                    .joinToString(", ")
+                    .ifEmpty { "ни одного" }
+                val message = "В ключе нет записи с алиасом «$requiredAlias» (секрет KEY_ALIAS), " +
+                    "а записей с ключом в файле несколько: $available. Выберите нужную и впишите " +
+                    "в секрет KEY_ALIAS (Settings → Secrets and variables → Actions → Update " +
+                    "secret). Подробно: docs/CI_BUILD.md, шаг B1."
+                ghAnnotation("error", "Алиас не найден в ключе", message)
+                appendStepSummary(
+                    "\n### Ключ подписи\n\n" +
+                        "- алиас из секрета `KEY_ALIAS`: `$requiredAlias`\n" +
+                        "- алиасы в файле: `$available`\n",
+                )
+                throw GradleException(message)
+            }
         }
 
-        try {
-            keyStore.getKey(requiredAlias, releaseSigning.keyPassword!!.toCharArray())
+        // AGP подписывает тем алиасом, который стоит в signingConfig, поэтому фиксируем
+        // выбранное значение обратно — иначе упаковка снова возьмёт несуществующий алиас.
+        releaseSigning.keyAlias = resolvedAlias
+
+        val privateKey = try {
+            keyStore.getKey(resolvedAlias, releaseSigning.keyPassword!!.toCharArray())
         } catch (e: GeneralSecurityException) {
-            val message = "Ключ «$requiredAlias» в файле есть, но не открывается паролем из " +
+            val message = "Ключ «$resolvedAlias» в файле есть, но не открывается паролем из " +
                 "секрета KEY_PASSWORD: ${e.message}. Для хранилища PKCS12 пароль ключа " +
                 "совпадает с паролем хранилища — docs/CI_BUILD.md, шаг B."
             ghAnnotation("error", "Неверный пароль ключа", message)
             throw GradleException(message, e)
         }
+        if (privateKey == null) {
+            val message = "Запись «$resolvedAlias» не является приватным ключом (нет пары " +
+                "ключ/сертификат), подписывать нечем. В секрет KEYSTORE_BASE64 нужно положить " +
+                "хранилище с записью типа PrivateKeyEntry — docs/CI_BUILD.md, шаг B1."
+            ghAnnotation("error", "В ключе нет приватного ключа", message)
+            throw GradleException(message)
+        }
 
-        // Всё сошлось: печатаем отпечаток сертификата — его же показывают apksigner
-        // и keytool -list -v в строке SHA256, поэтому есть с чем сверить.
         val certificate = keyStore.getCertificate(requiredAlias)
         val fingerprint = certificate?.let { cert ->
             MessageDigest.getInstance("SHA-256").digest(cert.encoded).joinToString(":") { byte ->
                 "%02X".format(byte)
             }
         } ?: "не определился"
-        ghAnnotation("notice", "Ключ подписи", "алиас «$requiredAlias», SHA-256: $fingerprint")
+        ghAnnotation("notice", "Ключ подписи", "алиас «$resolvedAlias», SHA-256: $fingerprint")
         appendStepSummary(
             "\n### Ключ подписи\n\n" +
-                "- алиас: `$requiredAlias`\n" +
+                "- алиас: `$resolvedAlias`\n" +
                 "- SHA-256 сертификата: `$fingerprint`\n",
         )
     }
