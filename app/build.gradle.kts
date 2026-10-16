@@ -4,6 +4,7 @@ import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.MessageDigest
+import java.security.cert.Certificate
 
 plugins {
     id("com.android.application")
@@ -38,6 +39,39 @@ fun appendStepSummary(text: String) {
     } catch (e: IOException) {
         project.logger.warn("Не удалось дописать Summary ($path): ${e.message}")
     }
+}
+
+/** Ищет apksigner в build-tools последней версии из ANDROID_SDK_ROOT или ANDROID_HOME. */
+fun findApksigner(): File? {
+    val sdkRoot = System.getenv("ANDROID_SDK_ROOT") ?: System.getenv("ANDROID_HOME") ?: return null
+    val versions = File(sdkRoot, "build-tools").listFiles()
+        ?.filter { it.isDirectory }
+        ?.sortedBy { it.name }
+        ?.asReversed()
+        ?: return null
+    for (version in versions) {
+        for (name in listOf("apksigner", "apksigner.bat")) {
+            val candidate = File(version, name)
+            if (candidate.isFile) return candidate
+        }
+    }
+    return null
+}
+
+/** Запускает apksigner и возвращает код возврата вместе со всем выводом. */
+fun runApksigner(apksigner: File, apk: File): Pair<Int, String> {
+    val process = ProcessBuilder(apksigner.absolutePath, "verify", "--print-certs", apk.absolutePath)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    return process.waitFor() to output
+}
+
+/** SHA-256 сертификата в виде AA:BB:… — тот же формат, что у apksigner и keytool. */
+fun certificateSha256(certificate: Certificate?): String? {
+    if (certificate == null) return null
+    return MessageDigest.getInstance("SHA-256").digest(certificate.encoded)
+        .joinToString(":") { byte -> "%02X".format(byte) }
 }
 
 /** Открывает хранилище ключей, перебирая типы: заданный, затем PKCS12 и JKS. */
@@ -317,11 +351,8 @@ android {
         // (а не из секрета), запрос по значению секрета вернул бы null.
         val certificate = keyStore.getCertificate(resolvedAlias)
             ?: keyStore.getCertificateChain(resolvedAlias)?.firstOrNull()
-        val fingerprint = certificate?.let { cert ->
-            MessageDigest.getInstance("SHA-256").digest(cert.encoded).joinToString(":") { byte ->
-                "%02X".format(byte)
-            }
-        } ?: "хранилище не отдало сертификат — сверьте отпечаток в Summary прогона"
+        val fingerprint = certificateSha256(certificate)
+            ?: "хранилище не отдало сертификат — сверьте отпечаток в Summary прогона"
         ghAnnotation("notice", "Ключ подписи", "алиас «$resolvedAlias», SHA-256: $fingerprint")
         appendStepSummary(
             "\n### Ключ подписи\n\n" +
@@ -388,6 +419,107 @@ dependencies {
 // AGP создаёт подписанный app-release.apk сам, и этот шаг ничего не делает —
 // неподписанного файла рядом уже нет.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Сверка подписи релизного APK с ключом из секретов. Запускается после
+// assembleRelease: читает сертификат APK через apksigner и проверяет, что он
+// совпадает с одной из записей ключа, который лежит в KEYSTORE_BASE64. Для
+// магазина важна именно пара «APK ↔ ключ»: если подпись не та, обновление
+// приложения не примут. Отпечаток печатается аннотацией, то есть его видно
+// в шапке прогона, даже когда лог шага недоступен. Если apksigner нет
+// (локальная сборка без Android SDK) — проверка пропускается с предупреждением.
+// ---------------------------------------------------------------------------
+val verifyReleaseApkSignature by tasks.registering {
+    description = "Сверяет сертификат релизного APK с ключом из секретов подписи"
+    group = "verification"
+
+    doLast {
+        if (!hasSigningSecrets) {
+            logger.warn("Подпись APK не сверялась: секреты KEYSTORE_* не заданы (docs/CI_BUILD.md, шаг B).")
+            return@doLast
+        }
+        val apk = layout.buildDirectory.file("outputs/apk/release/app-release.apk").get().asFile
+        if (!apk.isFile) {
+            logger.warn("Подпись APK не сверялась: файла ${apk.name} нет.")
+            return@doLast
+        }
+        val apksigner = findApksigner()
+        if (apksigner == null) {
+            logger.warn("Подпись APK не сверялась: apksigner не найден (нужен ANDROID_SDK_ROOT).")
+            return@doLast
+        }
+
+        val (exitCode, output) = runApksigner(apksigner, apk)
+        if (exitCode != 0) {
+            val message = "apksigner не подтвердил подпись ${apk.name}: " +
+                output.trim().lines().takeLast(6).joinToString(" | ")
+            ghAnnotation("error", "APK не подписан", message)
+            throw GradleException(message)
+        }
+
+        val apkSha = output.lineSequence()
+            .firstOrNull { it.contains("SHA-256 digest", ignoreCase = true) }
+            ?.substringAfterLast(":")
+            ?.replace(":", "")
+            ?.trim()
+            ?.uppercase()
+        if (apkSha.isNullOrEmpty()) {
+            logger.warn("apksigner не напечатал отпечаток сертификата — сравнивать нечего.")
+            return@doLast
+        }
+        val apkFingerprint = apkSha.chunked(2).joinToString(":")
+
+        // Какие ключи вообще есть в хранилище из секретов — по ним и сверяем.
+        val storeFile = rootProject.file(keystoreFilePath!!)
+        val (keyStore, storeProblem) = loadKeyStore(
+            storeFile,
+            keystorePassword!!.toCharArray(),
+            null,
+        )
+        if (keyStore == null) {
+            val message = "Не удалось открыть ключ подписи для сверки: ${storeProblem?.message}"
+            ghAnnotation("error", "Ключ подписи не открывается", message)
+            throw GradleException(message, storeProblem)
+        }
+        val fingerprints = keyStore.aliases().toList()
+            .filter { keyStore.isKeyEntry(it) }
+            .sorted()
+            .map { alias ->
+                alias to (
+                    certificateSha256(keyStore.getCertificate(alias))
+                        ?: certificateSha256(keyStore.getCertificateChain(alias)?.firstOrNull())
+                    )
+            }
+
+        val matched = fingerprints.firstOrNull { (_, sha) -> sha.equals(apkFingerprint, ignoreCase = true) }
+        if (matched == null) {
+            val available = fingerprints.joinToString(", ") { (alias, sha) -> "$alias ($sha)" }
+                .ifEmpty { "нет записей с ключом" }
+            val message = "Релизный APK подписан не тем ключом, который лежит в секретах. " +
+                "У APK: $apkFingerprint. В ключе: $available. " +
+                "Проверьте KEYSTORE_BASE64 и KEY_ALIAS (docs/CI_BUILD.md, шаг B). " +
+                "В магазин такой APK загружать нельзя: обновление приложения не примут."
+            ghAnnotation("error", "Подпись APK не совпала с ключом", message)
+            throw GradleException(message)
+        }
+
+        val (alias, _) = matched
+        ghAnnotation(
+            "notice",
+            "Подпись APK",
+            "APK подписан ключом из секретов: алиас «$alias», SHA-256: $apkFingerprint",
+        )
+        appendStepSummary(
+            "\n### Подпись APK\n\n" +
+                "- сертификат APK: `$apkFingerprint`\n" +
+                "- совпадает с ключом из `KEYSTORE_BASE64`, запись «$alias»\n",
+        )
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy(verifyReleaseApkSignature)
+}
+
 val aliasUnsignedReleaseApk by tasks.registering {
     description = "Копирует app-release-unsigned.apk в app-release.apk, если подписи нет"
     group = "build"

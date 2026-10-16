@@ -132,6 +132,26 @@ else
     warn "Потеря этого файла = невозможность выпускать обновления."
 fi
 
+# --- 3b. Проверка алиаса ---------------------------------------------------
+# PEPK падает с «No key with alias» уже после ввода пароля, поэтому проверяем
+# заранее: читаем список записей ключа и ищем в нём нужный алиас. Пароль
+# спрашивается один раз (тот же keytool, который потом зовёт PEPK).
+step 3b/5 "Проверяю алиас «$ALIAS» в ключе $KEYSTORE"
+ALIASES_FILE="$(mktemp 2>/dev/null || echo "/tmp/rustore-aliases.$$")"
+if "$KEYTOOL" -list -keystore "$KEYSTORE" > "$ALIASES_FILE" 2>&1; then
+    if grep -q "^$ALIAS," "$ALIASES_FILE"; then
+        info "алиас «$ALIAS» найден"
+    else
+        warn "в ключе нет записи с алиасом «$ALIAS». Записи, которые есть:"
+        sed 's/^/      /' "$ALIASES_FILE" >&2
+        rm -f "$ALIASES_FILE"
+        die "запустите заново с --alias=<нужный алиас из списка выше>"
+    fi
+else
+    warn "список алиасов прочитать не удалось — продолжаю как есть"
+fi
+rm -f "$ALIASES_FILE"
+
 # --- 4. PEPK → ZIP ---------------------------------------------------------
 step 4/5 "Шифрую ключ подписи (PEPK) → $OUTDIR/pepk_out.zip"
 rm -f "$OUTDIR/pepk_out.zip"
