@@ -133,7 +133,7 @@ keytool -list -v -keystore app-signing.keystore -alias sign
 |---|---|
 | `KEYSTORE_BASE64` | весь файл `app-signing.keystore` в base64 (одна строка) |
 | `KEYSTORE_PASSWORD` | пароль хранилища из шага A |
-| `KEY_ALIAS` | `sign` |
+| `KEY_ALIAS` | `sign` — но только если запись в ключе действительно так называется (см. B1) |
 | `KEY_PASSWORD` | пароль ключа; для PKCS12 — тот же, что пароль хранилища |
 
 **Как получить base64-строку ключа** (вывод — длинная строка, копировать целиком, без пробелов):
@@ -159,6 +159,42 @@ base64 -i app-signing.keystore | tr -d '\n'   # macOS
 
 > Самая частая ошибка: добавить секреты не в репозиторий, а в **Environment**.
 > Воркфлоу читает секреты репозитория, поэтому такие сборки соберутся без подписи.
+
+### B1. Алиас: значение секрета `KEY_ALIAS` должно быть в самом ключе
+
+Алиас — это ярлык записи внутри файла ключа, а не что-то отдельное от него. `KEY_ALIAS`
+и файл `app-signing.keystore` обязаны совпадать: если в секрете написано `sign`, а в файле
+запись называется иначе, сборка падает на упаковке APK:
+
+```
+:app:packageRelease FAILED
+KeytoolException: Failed to read key sign from store "…/app-signing.keystore":
+No key with alias 'sign' found in keystore
+```
+
+где взять настоящий алиас: **на компьютере, где лежит файл ключа** (Java есть, если
+установлена Android Studio):
+
+```cmd
+"%ProgramFiles%\Android\Android Studio\jbr\bin\keytool" -list -v -keystore app-signing.keystore
+```
+
+В ответе для каждой записи печатается строка `Alias name: …`. Нужна запись типа
+`Entry type: PrivateKeyEntry` — её алиас и есть настоящее значение. Частые причины
+расхождения: ключ создан `keytool` без `-alias sign` (тогда алиас по умолчанию `mykey`)
+или мастером «Generate Signed Bundle / APK» в Android Studio, где алиас вы вводили сами.
+
+Что делать — любой из вариантов:
+
+| Вариант | Действия | Когда подходит |
+|---|---|---|
+| Поправить секрет (проще) | Settings → Secrets and variables → Actions → `KEY_ALIAS` → **Update secret** → вставить алиас из `keytool -list -v` | всегда; код не меняется |
+| Пересоздать ключ с `-alias sign` | шаг A1 заново, затем заново считать base64 и обновить `KEYSTORE_BASE64` | если приложение ещё нигде не опубликовано |
+| Переименовать запись в файле | `keytool -changealias -keystore app-signing.keystore -alias mykey -destalias sign` → файл изменится, поэтому обновить и `KEYSTORE_BASE64` | если файл менять не страшно |
+
+Проверить результат можно до запуска сборки: имя и алиас файла указываются в артефакте
+`release-apk` в Summary прогона — отпечаток ключа должен совпасть с `SHA256:` из
+`keytool -list -v`.
 
 ---
 
@@ -366,6 +402,7 @@ adb logcat -s ConverterAds:V
 | `git push` с `.github/workflows/...` отклонён | у токена/бота нет права `workflows` | создавать и обновлять файл только через веб-интерфейс |
 | `::error` про `ads.testMode` или ID блока | в `gradle.properties` тестовый режим или демо-ID | привести к `ads.testMode=false` и `R-M-20230616-2/-4/-7` |
 | `::error title=APK не подписан` | неверный пароль, alias или секрет не в репозитории | проверить `KEYSTORE_PASSWORD`, `KEY_ALIAS=sign`, `KEY_PASSWORD`; убедиться, что секреты добавлены в **репозиторий**, а не в Environment |
+| `:app:packageRelease FAILED`, `No key with alias '…' found in keystore` | секрет `KEY_ALIAS` не совпадает с алиасом внутри `app-signing.keystore` | узнать настоящий алиас: `keytool -list -v -keystore app-signing.keystore` → строка `Alias name:` у записи `PrivateKeyEntry`, затем обновить секрет `KEY_ALIAS` этим значением (шаг B1). Сборка сама перечислит алиасы, которые есть в файле |
 | `:app:packageRelease FAILED`, `SigningConfig "release" is missing required property "keyPassword"` | Gradle не получил одно из четырёх значений подписи. В коде для этого случая есть ранняя проверка: если увидите её текст («Секреты подписи пришли не полностью…»), в нём перечислено, чего не хватает | сверить имена секретов репозитория буква в букву (шаг B); если в тексте проверки всё перечисленное заполнено — значит поле потерялось при присваивании, ищите в `app/build.gradle.kts` строку вида `x = x` в блоке `signingConfigs` |
 | `::warning` «Секрет KEYSTORE_BASE64 пуст» | секрет не добавлен | шаг B |
 | `Could not find com.yandex.android:mobileads:8.6.0` | репозитории Maven | проверить, что в `settings.gradle.kts` есть `google()`, `mavenCentral()`, `jitpack`; повторить прогон (иногда сбой сети) |
