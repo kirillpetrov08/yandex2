@@ -19,7 +19,7 @@
 | **Рекламные блоки** | `ads.bannerUnitId` и др. в `gradle.properties` | уже вписаны боевые ID `R-M-20230616-2` / `-4` / `-7` и `ads.testMode=false`; менять только при создании новых блоков |
 | **Контакты и домен** | `Config.kt`, `docs/privacy_policy.html`, `docs/STORE_TEXTS.md` | **уже заполнены**: `kirillpetrov08@gmail.com`, политика на `https://kirillpetrov08.github.io/converterplus/privacy-policy.html` |
 | **Publisher ID** | `docs/app-ads.txt` | **уже вписан**: `yandex.com, 110347355, DIRECT`, файл опубликован в корне сайта |
-| **Версия сборки** | `versionCode 1` / `versionName "1.0.0"` | поднять перед каждой загрузкой в магазин (в CI — полем `version_code` в форме запуска) |
+| **Версия сборки** | `versionCode 2` / `versionName "1.0.1"` | поднять перед каждой загрузкой в магазин (в CI — полем `version_code` в форме запуска) |
 | **Инструменты на главной** | все шесть: изображения, PDF → фото, фото → PDF, извлечение текста, аудио, видео | **заглушек нет**: этапы 1–4 реализованы, все инструменты работают |
 
 Проверить, что плейсхолдеров не осталось, можно поиском:

@@ -31,6 +31,18 @@ object ImagesToPdf {
     /** Ограничение размера страницы «по размеру фото», чтобы PDF не получился гигантским. */
     private const val MAX_FIT_SIDE = 1600f
 
+    /**
+     * Сколько пикселей по длинной стороне декодировать (≈300 dpi на A4).
+     * Полноразмерный снимок 12 Мп в ARGB_8888 — это ~48 МБ, поэтому разрешение
+     * приходится снижать: битмапы всех страниц живут в памяти до конца записи файла.
+     */
+    private fun decodeSide(fileCount: Int): Int = when {
+        fileCount <= 2 -> 2600
+        fileCount <= 6 -> 2000
+        fileCount <= 12 -> 1600
+        else -> 1200
+    }
+
     suspend fun convert(
         inputs: List<File>,
         outputFile: File,
@@ -41,6 +53,18 @@ object ImagesToPdf {
         if (inputs.isEmpty()) throw NoInputException()
 
         val document = PdfDocument()
+
+        // PdfDocument держит ссылки на битмапы до самого writeTo: страницы не растеризуются
+        // при finishPage. Если освободить битмап раньше записи, Skia читает освобождённую
+        // память и процесс падает — поэтому копим их и освобождаем только после writeTo.
+        val decoded = mutableListOf<Bitmap>()
+
+        // Для страниц «по размеру фото» декодировать больше MAX_FIT_SIDE смысла нет.
+        val maxSide = if (pageSize == PdfPageSize.FIT_IMAGE) {
+            minOf(decodeSide(inputs.size), MAX_FIT_SIDE.toInt())
+        } else {
+            decodeSide(inputs.size)
+        }
         var pageNumber = 0
 
         try {
@@ -48,31 +72,34 @@ object ImagesToPdf {
                 coroutineContext.ensureActive()
                 if (!input.exists()) throw CannotOpenFileException()
 
-                val bitmap = ImageConverter.decode(input)
+                val bitmap = ImageConverter.decodeScaled(input, maxSide)
+                decoded += bitmap
+
+                val (width, height) = pageDimensions(bitmap, pageSize)
+                val info = PdfDocument.PageInfo.Builder(width, height, pageNumber + 1).create()
+                val page = document.startPage(info)
                 try {
-                    val (width, height) = pageDimensions(bitmap, pageSize)
-                    val info = PdfDocument.PageInfo.Builder(width, height, pageNumber + 1).create()
-                    val page = document.startPage(info)
-                    try {
-                        drawScaled(page.canvas, bitmap, width, height, pageSize)
-                        if (watermarkText != null) {
-                            Watermark.applyToPdfCanvas(page.canvas, width, height, watermarkText)
-                        }
-                    } finally {
-                        document.finishPage(page)
+                    drawScaled(page.canvas, bitmap, width, height, pageSize)
+                    if (watermarkText != null) {
+                        Watermark.applyToPdfCanvas(page.canvas, width, height, watermarkText)
                     }
-                    pageNumber++
-                    onProgress((pageNumber * 90) / inputs.size)
                 } finally {
-                    bitmap.recycle()
+                    document.finishPage(page)
                 }
+                pageNumber++
+                onProgress((pageNumber * 90) / inputs.size)
             }
 
             outputFile.parentFile?.mkdirs()
             FileOutputStream(outputFile).use { stream -> document.writeTo(stream) }
             onProgress(100)
+        } catch (t: Throwable) {
+            // Запись могла оборваться на середине — не оставляем битый файл в кэше.
+            runCatching { outputFile.delete() }
+            throw t
         } finally {
             document.close()
+            decoded.forEach { bitmap -> runCatching { bitmap.recycle() } }
         }
 
         if (!outputFile.exists() || outputFile.length() == 0L) throw CannotOpenFileException()
@@ -92,6 +119,9 @@ object ImagesToPdf {
     }
 
     private fun drawScaled(canvas: Canvas, bitmap: Bitmap, pageWidth: Int, pageHeight: Int, pageSize: PdfPageSize) {
+        // Белая подложка нужна всегда: прозрачные PNG иначе дают серый фон в просмотрщиках.
+        canvas.drawColor(Color.WHITE)
+
         if (pageSize == PdfPageSize.FIT_IMAGE) {
             canvas.drawBitmap(bitmap, null, Rect(0, 0, pageWidth, pageHeight), Paint(Paint.FILTER_BITMAP_FLAG))
             return
@@ -105,7 +135,6 @@ object ImagesToPdf {
         val left = (pageWidth - targetWidth) / 2f
         val top = (pageHeight - targetHeight) / 2f
 
-        canvas.drawColor(Color.WHITE)
         canvas.drawBitmap(
             bitmap,
             null,

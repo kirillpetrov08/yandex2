@@ -72,8 +72,17 @@ object HistoryTsv {
     fun encodeAll(entries: List<HistoryEntry>): String =
         entries.joinToString("\n") { encode(it) }
 
+    /**
+     * Убирает повторы по id, оставляя первое вхождение.
+     *
+     * Повторы появляются сами собой: WorkManager перезапускает работу, если процесс был убит
+     * (например, системой), — запись истории при этом идёт с тем же id запроса второй раз.
+     * Дубли ломали список: LazyColumn с одинаковыми ключами падает с IllegalArgumentException.
+     */
+    fun dedupe(entries: List<HistoryEntry>): List<HistoryEntry> = entries.distinctBy { it.id }
+
     fun decodeAll(text: String): List<HistoryEntry> =
-        text.lineSequence().mapNotNull { decode(it) }.toList()
+        dedupe(text.lineSequence().mapNotNull { decode(it) }.toList())
 
     /** Новые записи сверху, сверх лимита отбрасываются. */
     fun enforceLimit(entries: List<HistoryEntry>, limit: Int = MAX_ENTRIES): List<HistoryEntry> =
@@ -118,15 +127,17 @@ class HistoryStore(private val file: File) {
         }
     }
 
-    fun add(entry: HistoryEntry) {
-        val updated = HistoryTsv.enforceLimit(listOf(entry) + load())
-        writeAtomic(updated)
-    }
+    fun add(entry: HistoryEntry) = addAll(listOf(entry))
 
+    /**
+     * Новые записи встают наверх и заменяют собой прежние с тем же id
+     * (повторный прогон той же работы не создаёт дубликатов).
+     */
     fun addAll(entries: List<HistoryEntry>) {
         if (entries.isEmpty()) return
-        val updated = HistoryTsv.enforceLimit(entries + load())
-        writeAtomic(updated)
+        val incomingIds = entries.map { it.id }.toSet()
+        val kept = load().filterNot { it.id in incomingIds }
+        writeAtomic(HistoryTsv.enforceLimit(entries + kept))
     }
 
     fun update(entry: HistoryEntry) {
@@ -152,11 +163,12 @@ class HistoryStore(private val file: File) {
 
     private fun writeAtomic(entries: List<HistoryEntry>) {
         file.parentFile?.mkdirs()
+        val text = HistoryTsv.encodeAll(HistoryTsv.dedupe(entries))
         val temp = File(file.parentFile, "${file.name}.tmp")
-        temp.writeText(HistoryTsv.encodeAll(entries))
+        temp.writeText(text)
         if (!temp.renameTo(file)) {
             // rename не сработал (редкий случай) — пишем напрямую
-            file.writeText(HistoryTsv.encodeAll(entries))
+            file.writeText(text)
             temp.delete()
         }
     }

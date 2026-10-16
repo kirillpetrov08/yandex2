@@ -140,7 +140,9 @@ def check_resource_references(strings: set[str]) -> None:
 DECLARATION = re.compile(
     r"^(?:public |internal |private |abstract |sealed |data |open |value |annotation )*"
     r"(?:class|object|interface|enum class|val|var|const val)\s+([A-Za-z0-9_]+)"
-    r"|^(?:public |internal |private )*(?:suspend )?fun\s+(?:[\w<>.]+\.)?([A-Za-z0-9_]+)\s*\(",
+    # У функций бывают параметры типа (fun <T> ChipRow(...)) и модификаторы inline/suspend.
+    r"|^(?:public |internal |private )*(?:suspend )?(?:inline )?(?:operator )?"
+    r"fun\s+(?:<[^>]*>\s*)?(?:[\w<>.]+\.)?([A-Za-z0-9_]+)\s*\(",
     re.MULTILINE,
 )
 

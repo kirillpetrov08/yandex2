@@ -62,7 +62,15 @@ object ImageConverter {
     }
 
     /** Декодирует файл любого поддерживаемого формата с учётом EXIF-ориентации. */
-    fun decode(file: File): Bitmap {
+    fun decode(file: File): Bitmap = decodeScaled(file, maxSide = 0)
+
+    /**
+     * Декодирует файл с ограничением длинной стороны кадра.
+     *
+     * Нужно там, где полноразмерный битмап не требуется: фото 12 Мп в ARGB_8888 занимает ~48 МБ,
+     * а для страницы PDF это лишние десятки мегабайт и риск OOM. `maxSide <= 0` — без ограничения.
+     */
+    fun decodeScaled(file: File, maxSide: Int): Bitmap {
         if (!file.exists() || file.length() == 0L) throw CannotOpenFileException()
 
         val extension = file.name.substringAfterLast('.', "").lowercase()
@@ -70,9 +78,9 @@ object ImageConverter {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
         val decoded = if (needsImageDecoder) {
-            decodeWithImageDecoder(file)
+            decodeWithImageDecoder(file, maxSide)
         } else {
-            decodeSampled(file)
+            decodeSampled(file, maxSide)
         } ?: throw CannotOpenFileException()
 
         return applyExifOrientation(file, decoded)
@@ -81,19 +89,8 @@ object ImageConverter {
     /** Уменьшенное превью для интерфейса: не грузим полноразмерный битмап. */
     fun decodePreview(file: File, maxSide: Int): Bitmap? {
         if (!file.exists()) return null
-        val extension = file.name.substringAfterLast('.', "").lowercase()
         return try {
-            if ((extension == "heic" || extension == "heif" || extension == "avif") &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-            ) {
-                decodeWithImageDecoder(file, maxSide)
-            } else {
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(file.absolutePath, bounds)
-                val sample = sampleSize(bounds.outWidth, bounds.outHeight, maxSide)
-                val options = BitmapFactory.Options().apply { inSampleSize = sample }
-                BitmapFactory.decodeFile(file.absolutePath, options)?.let { applyExifOrientation(file, it) }
-            }
+            decodeScaled(file, maxSide)
         } catch (e: Exception) {
             null
         }
@@ -105,6 +102,9 @@ object ImageConverter {
         ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
             // Без premultiplied alpha цвета полупрозрачных пикселей не «съедаются» при перекодировании.
             decoder.setUnpremultipliedRequired(true)
+            // По умолчанию декодер может вернуть HARDWARE-битмап: его нельзя ни рисовать
+            // на обычном canvas, ни копировать в ARGB_8888. Просим софтверную память явно.
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             if (maxSide > 0) {
                 val sample = sampleSize(info.size.width, info.size.height, maxSide)
                 if (sample > 1) {
@@ -117,13 +117,15 @@ object ImageConverter {
     }
 
     private fun decodeSampled(file: File, maxSide: Int = 0): Bitmap? {
-        if (maxSide <= 0) {
-            return BitmapFactory.decodeFile(file.absolutePath)
-        }
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(file.absolutePath, bounds)
         val options = BitmapFactory.Options().apply {
-            inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, maxSide)
+            // Всегда ARGB_8888: декодер сам решает иначе (RGB_565 для JPEG), а такой битмап
+            // нельзя использовать как основу для canvas — рисование на нём падает.
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        if (maxSide > 0) {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, bounds)
+            options.inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, maxSide)
         }
         return BitmapFactory.decodeFile(file.absolutePath, options)
     }

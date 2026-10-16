@@ -67,8 +67,9 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
 
     private fun publish() {
         val current = _state.value
+        // distinctBy — страховка списка: одинаковые ключи в LazyColumn роняют экран истории.
         _state.value = current.copy(
-            entries = HistoryTsv.filter(allEntries, current.query, current.formatFilter),
+            entries = HistoryTsv.dedupe(HistoryTsv.filter(allEntries, current.query, current.formatFilter)),
             formats = HistoryTsv.availableFormats(allEntries),
         )
     }

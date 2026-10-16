@@ -117,6 +117,27 @@ class HistoryTsvTest {
     fun `format pair is readable`() {
         assertEquals("JPG → PNG", entry(from = "jpg", to = "png").formatPair)
     }
+
+    @Test
+    fun `duplicated ids are removed keeping the first one`() {
+        val entries = listOf(
+            entry(id = "req-1-0", name = "newer.png", timestamp = 30),
+            entry(id = "req-1-0", name = "older.png", timestamp = 10),
+            entry(id = "req-2-0", name = "other.png", timestamp = 20),
+        )
+        val unique = HistoryTsv.dedupe(entries)
+        assertEquals(listOf("req-1-0", "req-2-0"), unique.map { it.id })
+        assertEquals("newer.png", unique.first().fileName)
+    }
+
+    @Test
+    fun `duplicated lines in stored file are ignored on read`() {
+        // Так выглядит история на устройстве после падения процесса:
+        // WorkManager перезапустил работу и записал те же id повторно.
+        val line = HistoryTsv.encode(entry(id = "req-1-0"))
+        val decoded = HistoryTsv.decodeAll("$line\n$line\n$line")
+        assertEquals(1, decoded.size)
+    }
 }
 
 class HistoryStoreTest {
@@ -178,6 +199,33 @@ class HistoryStoreTest {
         val names = folder.root.list()?.toList().orEmpty()
         assertFalse(names.contains("history.tsv.tmp"))
         assertTrue(names.contains("history.tsv"))
+    }
+
+    @Test
+    fun `repeated work does not duplicate entries`() {
+        // Повторный прогон той же работы (WorkManager перезапустил её после падения процесса)
+        // приходит с теми же id — запись должна заменять старую, а не добавлять вторую.
+        val store = HistoryStore(File(folder.root, "history.tsv"))
+        val first = HistoryEntry("req-1-0", 1000, "a.pdf", "jpg", "pdf", 10, null, HistoryStatus.READY, "/tmp/a.pdf")
+        val second = HistoryEntry("req-1-1", 999, "b.pdf", "jpg", "pdf", 20, null, HistoryStatus.READY, "/tmp/b.pdf")
+        store.addAll(listOf(first, second))
+        store.addAll(listOf(first, second))
+
+        val loaded = store.load()
+        assertEquals(2, loaded.size)
+        assertEquals(listOf("req-1-0", "req-1-1"), loaded.map { it.id })
+    }
+
+    @Test
+    fun `add replaces entry with the same id`() {
+        val store = HistoryStore(File(folder.root, "history.tsv"))
+        val entry = HistoryEntry("a", 1, "a.png", "jpg", "png", 1, null, HistoryStatus.READY, "/tmp/a.png")
+        store.add(entry)
+        store.add(entry.copy(sizeBytes = 42, timestamp = 5))
+
+        val loaded = store.load()
+        assertEquals(1, loaded.size)
+        assertEquals(42L, loaded.first().sizeBytes)
     }
 
     @Test

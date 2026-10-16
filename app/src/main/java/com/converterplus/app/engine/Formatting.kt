@@ -36,6 +36,20 @@ object Formatting {
     /** «37 %» или «−12 %». */
     fun formatPercent(percent: Int): String = if (percent < 0) "−${abs(percent)} %" else "$percent %"
 
+    /**
+     * Экономия для карточки результата: «37 %».
+     * Файл никогда не бывает нулевого размера, поэтому «100 %» не пишем — это выглядело бы
+     * как ошибка округления, показываем «>99 %».
+     */
+    fun formatSaved(percent: Int): String = when {
+        percent >= 100 -> ">99 %"
+        percent < 0 -> formatPercent(percent)
+        else -> "$percent %"
+    }
+
+    /** Насколько файл вырос: «на 435 %». */
+    fun formatGrew(percent: Int): String = "на ${abs(percent)} %"
+
     /** «45 сек», «3 мин 20 сек», «1 ч 05 мин». */
     fun formatDuration(millis: Long): String {
         if (millis < 0) return "0 сек"

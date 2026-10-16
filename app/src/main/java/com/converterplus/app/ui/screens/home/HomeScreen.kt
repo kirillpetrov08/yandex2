@@ -46,7 +46,7 @@ fun HomeScreen(
             .padding(bottom = AppDimens.BannerSafeGap),
     ) {
         Column(modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding)) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(AppDimens.SpaceM))
             Text(
                 text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium,
@@ -58,14 +58,14 @@ fun HomeScreen(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(AppDimens.BlockGap))
         SectionHeader(
             text = stringResource(R.string.home_quick_start),
             modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding),
         )
         LazyRow(
             contentPadding = PaddingValues(horizontal = AppDimens.ScreenPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
         ) {
             itemsIndexed(ToolCatalog.quickStart, key = { _, tool -> tool.kind.id }) { index, tool ->
                 QuickStartCard(
@@ -78,7 +78,7 @@ fun HomeScreen(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(AppDimens.SpaceXl))
         SectionHeader(
             text = stringResource(R.string.home_all_tools),
             modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding),
@@ -92,10 +92,10 @@ fun HomeScreen(
 private fun ToolsGrid(onOpenTool: (ToolKind) -> Unit) {
     Column(
         modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
     ) {
         ToolCatalog.all.chunked(2).forEachIndexed { rowIndex, row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceM)) {
                 row.forEachIndexed { columnIndex, tool ->
                     ToolCard(
                         title = stringResource(id = tool.titleRes),
@@ -111,6 +111,6 @@ private fun ToolsGrid(onOpenTool: (ToolKind) -> Unit) {
                 if (row.size == 1) Spacer(Modifier.width(0.dp).weight(1f))
             }
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(AppDimens.SpaceXs))
     }
 }
