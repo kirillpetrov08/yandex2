@@ -313,12 +313,15 @@ android {
             throw GradleException(message)
         }
 
-        val certificate = keyStore.getCertificate(requiredAlias)
+        // Сертификат берём по фактически выбранному алиасу: если алиас пришёл из файла
+        // (а не из секрета), запрос по значению секрета вернул бы null.
+        val certificate = keyStore.getCertificate(resolvedAlias)
+            ?: keyStore.getCertificateChain(resolvedAlias)?.firstOrNull()
         val fingerprint = certificate?.let { cert ->
             MessageDigest.getInstance("SHA-256").digest(cert.encoded).joinToString(":") { byte ->
                 "%02X".format(byte)
             }
-        } ?: "не определился"
+        } ?: "хранилище не отдало сертификат — сверьте отпечаток в Summary прогона"
         ghAnnotation("notice", "Ключ подписи", "алиас «$resolvedAlias», SHA-256: $fingerprint")
         appendStepSummary(
             "\n### Ключ подписи\n\n" +
