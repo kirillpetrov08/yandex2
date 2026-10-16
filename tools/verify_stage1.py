@@ -11,7 +11,10 @@
   7. Нет маркеров-заглушек (TODO / FIXME / "здесь будет").
   8. Количество юнит-тестов.
   9. Обязательные файлы сборки, воркфлоу и ключи рекламы.
- 10. В GitHub Actions — компиляция и юнит-тесты, а ошибки выводятся аннотациями
+ 10. В .kts-файлах нет присваивания `x = x` (правая часть такого выражения внутри
+     блока с получателем разрешается в свойство этого получателя, а не в переменную
+     скрипта, — так молча теряется значение ключа подписи).
+ 11. В GitHub Actions — компиляция и юнит-тесты, а ошибки выводятся аннотациями
      к прогону. Полный лог шага виден только после входа в аккаунт GitHub,
      аннотации же показываются всем и отдают точные файл и строку.
 
@@ -377,7 +380,32 @@ def check_placeholders() -> None:
                 errors.append(f"{rel(path)}:{number}: заглушка: {line.strip()}")
 
 
-# ---------------------------------------------------------------- 8. тесты
+# ------------------------------------------------- 8. самоприсваивание в .kts
+def check_kts_self_assignments() -> None:
+    """Ловит `x = x` в скриптах Gradle.
+
+    Внутри блока с получателем (`create("release") { ... }`, `android { ... }`)
+    правая часть такого выражения разрешается в свойство самого получателя, а не
+    в переменную скрипта. В подписи релиза это дало `keyPassword = keyPassword`,
+    и сборка падала на упаковке APK: «SigningConfig "release" is missing required
+    property "keyPassword"» — без намёка на настоящую причину.
+    """
+    pattern = re.compile(r"^\s*(?:this\.)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\1\s*$")
+    for name in ["app/build.gradle.kts", "build.gradle.kts", "settings.gradle.kts"]:
+        path = os.path.join(ROOT, name)
+        if not os.path.exists(path):
+            continue
+        for number, line in enumerate(open(path, encoding="utf-8"), start=1):
+            match = pattern.match(line)
+            if match:
+                errors.append(
+                    f"{name}:{number}: присваивание `{match.group(1)} = {match.group(1)}`. "
+                    "Внутри блока с получателем правая часть укажет на его свойство, а не на "
+                    "переменную скрипта, — значение потеряется. Переименуйте переменную.",
+                )
+
+
+# ---------------------------------------------------------------- 9. тесты
 def count_tests() -> tuple[int, int]:
     methods = 0
     files = 0
@@ -390,7 +418,7 @@ def count_tests() -> tuple[int, int]:
     return files, methods
 
 
-# ---------------------------------------------------------------- 9. сборка
+# --------------------------------------------------------------- 10. сборка
 def check_gradle() -> None:
     for required in [
         "settings.gradle.kts",
@@ -605,6 +633,7 @@ def main() -> int:
     check_packages_and_duplicates()
     check_balanced()
     check_placeholders()
+    check_kts_self_assignments()
     check_gradle()
     test_files, test_methods = count_tests()
 
