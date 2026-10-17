@@ -1,5 +1,7 @@
 package com.converterplus.app.engine
 
+import com.converterplus.app.engine.image.FitMode
+
 /** Инструменты приложения: изображения, PDF, OCR, аудио и видео. */
 enum class ToolKind(val id: String) {
     IMAGES("images"),
@@ -64,6 +66,13 @@ data class ConversionRequest(
     val selectedPages: List<Int>? = null,
     val pdfDpi: Int = 150,
     val pdfPageSize: PdfPageSize = PdfPageSize.A4,
+    /**
+     * Размер результата для изображений. null — оставить как есть (пункт «Оригинал»).
+     * В запрос попадают уже проверенные значения из [com.converterplus.app.engine.image.ImageSizing].
+     */
+    val targetWidth: Int? = null,
+    val targetHeight: Int? = null,
+    val fitMode: FitMode = FitMode.FIT,
 ) {
     val totalInputBytes: Long get() = inputs.sumOf { it.sizeBytes }
 

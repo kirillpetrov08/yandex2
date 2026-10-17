@@ -76,7 +76,7 @@ fun OnboardingScreen(
             onClick = { onFinish(false) },
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(12.dp),
+                .padding(AppDimens.SpaceM),
         ) {
             Text(text = stringResource(R.string.action_skip))
         }
@@ -84,7 +84,7 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = AppDimens.SpaceXl)
                 .padding(top = 96.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -172,7 +172,7 @@ fun OnboardingScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 28.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
         ) {
             pages.forEachIndexed { index, _ ->
                 Box(

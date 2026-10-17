@@ -21,6 +21,8 @@ data class HistoryUiState(
     val formatFilter: String? = null,
     val entries: List<HistoryEntry> = emptyList(),
     val formats: List<String> = emptyList(),
+    /** Всего записей без фильтров — для подписи «найдено из». */
+    val totalCount: Int = 0,
 ) {
     val isEmpty: Boolean get() = entries.isEmpty()
 }
@@ -71,6 +73,7 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         _state.value = current.copy(
             entries = HistoryTsv.dedupe(HistoryTsv.filter(allEntries, current.query, current.formatFilter)),
             formats = HistoryTsv.availableFormats(allEntries),
+            totalCount = allEntries.size,
         )
     }
 

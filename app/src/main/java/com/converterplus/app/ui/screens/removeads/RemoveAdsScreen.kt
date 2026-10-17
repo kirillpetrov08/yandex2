@@ -124,7 +124,7 @@ fun RemoveAdsScreen(
                     .size(64.dp)
                     .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                    .padding(16.dp),
+                    .padding(AppDimens.SpaceL),
             )
             Spacer(Modifier.height(20.dp))
             Text(

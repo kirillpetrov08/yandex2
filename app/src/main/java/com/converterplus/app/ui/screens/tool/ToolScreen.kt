@@ -8,6 +8,9 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,11 +35,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -56,13 +61,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.converterplus.app.R
@@ -77,6 +85,11 @@ import com.converterplus.app.engine.PdfPageSize
 import com.converterplus.app.engine.PickedFile
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.engine.ToolKind
+import com.converterplus.app.engine.image.FitMode
+import com.converterplus.app.engine.image.ImageSize
+import com.converterplus.app.engine.image.ImageSizing
+import com.converterplus.app.engine.image.SizeGroup
+import com.converterplus.app.engine.image.SizePreset
 import com.converterplus.app.storage.FileSaver
 import com.converterplus.app.ui.components.AppBottomSheet
 import com.converterplus.app.ui.components.CircleProgress
@@ -461,6 +474,10 @@ private fun ToolContent(
             OcrPrecisionSection(state = state, onWatch = { onWatchRewarded(RewardedReason.OCR_PRECISION) })
         }
 
+        if (state.tool == ToolKind.IMAGES) {
+            SizeSection(state = state, viewModel = viewModel)
+        }
+
         if (Capabilities.hasQualityChoice(state.tool)) {
             QualitySection(state = state, viewModel = viewModel)
         }
@@ -589,7 +606,7 @@ private fun RecentsBlock(tool: ToolKind, onPicked: (String) -> Unit) {
                     .clip(MaterialTheme.shapes.small)
                     .background(MaterialTheme.colorScheme.surface)
                     .clickable { onPicked(recent.uri) }
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = 14.dp, vertical = AppDimens.SpaceM),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -799,6 +816,240 @@ private fun OcrPrecisionSection(state: ToolUiState, onWatch: () -> Unit) {
     }
 }
 
+/**
+ * Размер результата: готовые шаблоны по группам, «свой размер» и способ подгонки.
+ *
+ * Ручной ввод проверяется здесь же, поэтому в запрос никогда не попадёт 0 или 100000 px.
+ * Подпись под чипами считает ровно то, что сделает движок, — одна и та же чистая функция
+ * [ImageSizing.resolve] используется и в интерфейсе, и при конвертации.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SizeSection(state: ToolUiState, viewModel: ToolViewModel) {
+    var showCustomDialog by remember { mutableStateOf(false) }
+
+    val target = ImageSizing.normalize(
+        state.customWidth ?: state.sizePreset?.width,
+        state.customHeight ?: state.sizePreset?.height,
+    )
+    val source = if (state.sourceWidth != null && state.sourceHeight != null) {
+        ImageSize(state.sourceWidth, state.sourceHeight)
+    } else {
+        null
+    }
+
+    Column {
+        SectionHeader(text = stringResource(R.string.tool_size_title))
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+        ) {
+            FilterChip(
+                selected = target == null,
+                onClick = { viewModel.selectSizePreset(null) },
+                label = { Text(stringResource(R.string.tool_size_original)) },
+                shape = MaterialTheme.shapes.small,
+            )
+            FilterChip(
+                selected = state.customWidth != null && state.customHeight != null,
+                onClick = { showCustomDialog = true },
+                label = {
+                    Text(
+                        text = if (state.customWidth != null && state.customHeight != null) {
+                            stringResource(
+                                R.string.tool_size_custom_value,
+                                state.customWidth ?: 0,
+                                state.customHeight ?: 0,
+                            )
+                        } else {
+                            stringResource(R.string.tool_size_custom)
+                        },
+                    )
+                },
+                shape = MaterialTheme.shapes.small,
+            )
+        }
+
+        SizeGroup.entries.forEach { group ->
+            val presets = SizePreset.entries.filter { it.group == group }
+            if (presets.isNotEmpty()) {
+                Text(
+                    text = stringResource(sizeGroupTitle(group)),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = AppDimens.SpaceM, bottom = AppDimens.SpaceS),
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+                ) {
+                    presets.forEach { preset ->
+                        FilterChip(
+                            selected = state.sizePreset == preset,
+                            onClick = { viewModel.selectSizePreset(preset) },
+                            label = { Text(preset.label) },
+                            shape = MaterialTheme.shapes.small,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (target != null) {
+            Text(
+                text = stringResource(R.string.tool_size_fit_title),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = AppDimens.SpaceL, bottom = AppDimens.SpaceS),
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
+            ) {
+                FitMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = state.fitMode == mode,
+                        onClick = { viewModel.selectFitMode(mode) },
+                        label = {
+                            Text(
+                                stringResource(
+                                    id = if (mode == FitMode.FIT) R.string.tool_size_fit else R.string.tool_size_crop,
+                                ),
+                            )
+                        },
+                        shape = MaterialTheme.shapes.small,
+                    )
+                }
+            }
+            Text(
+                text = stringResource(
+                    id = if (state.fitMode == FitMode.FIT) R.string.tool_size_fit_hint else R.string.tool_size_crop_hint,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = AppDimens.SpaceS),
+            )
+        }
+
+        Text(
+            text = sizeResultText(state = state, source = source, target = target),
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (target == null) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+            modifier = Modifier.padding(top = AppDimens.SpaceM),
+        )
+    }
+
+    if (showCustomDialog) {
+        CustomSizeDialog(
+            initialWidth = state.customWidth ?: state.sourceWidth ?: 1920,
+            initialHeight = state.customHeight ?: state.sourceHeight ?: 1080,
+            onDismiss = { showCustomDialog = false },
+            onApply = { width, height ->
+                viewModel.applyCustomSize(width, height)
+                showCustomDialog = false
+            },
+        )
+    }
+}
+
+/** Подпись «что получится» — берётся из того же расчёта, что и сама конвертация. */
+@Composable
+private fun sizeResultText(state: ToolUiState, source: ImageSize?, target: ImageSize?): String {
+    if (target == null) return stringResource(R.string.tool_size_original_hint)
+    if (source == null) return stringResource(R.string.tool_size_result, target.width, target.height)
+
+    val result = ImageSizing.resolve(source, target, state.fitMode)
+    val ratio = Formatting.formatRatio(ImageSizing.shrinkRatio(source, result))
+    return when {
+        state.fitMode == FitMode.CROP -> stringResource(R.string.tool_size_result, result.width, result.height)
+        ratio != null -> stringResource(
+            R.string.tool_size_result_smaller,
+            result.width,
+            result.height,
+            ratio,
+        )
+
+        result == source && state.sizePreset != null -> stringResource(R.string.tool_size_no_upscale)
+        else -> stringResource(R.string.tool_size_result, result.width, result.height)
+    }
+}
+
+private fun sizeGroupTitle(group: SizeGroup): Int = when (group) {
+    SizeGroup.SCREEN -> R.string.tool_size_group_screen
+    SizeGroup.SOCIAL -> R.string.tool_size_group_social
+    SizeGroup.PRINT -> R.string.tool_size_group_print
+}
+
+/** Диалог ручного размера: принимает только числа и сразу проверяет диапазон. */
+@Composable
+private fun CustomSizeDialog(
+    initialWidth: Int,
+    initialHeight: Int,
+    onDismiss: () -> Unit,
+    onApply: (Int, Int) -> Unit,
+) {
+    var widthText by remember { mutableStateOf(initialWidth.toString()) }
+    var heightText by remember { mutableStateOf(initialHeight.toString()) }
+    val width = widthText.toIntOrNull()
+    val height = heightText.toIntOrNull()
+    val valid = ImageSizing.normalize(width, height) != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.tool_size_custom_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceM)) {
+                OutlinedTextField(
+                    value = widthText,
+                    onValueChange = { widthText = it.filter(Char::isDigit).take(5) },
+                    label = { Text(stringResource(R.string.tool_size_width)) },
+                    singleLine = true,
+                    isError = !valid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = heightText,
+                    onValueChange = { heightText = it.filter(Char::isDigit).take(5) },
+                    label = { Text(stringResource(R.string.tool_size_height)) },
+                    singleLine = true,
+                    isError = !valid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (!valid) {
+                    Text(
+                        text = stringResource(R.string.tool_size_range_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (width != null && height != null) onApply(width, height) },
+                enabled = valid,
+            ) {
+                Text(stringResource(R.string.action_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
 @Composable
 private fun QualitySection(state: ToolUiState, viewModel: ToolViewModel) {
     Column {
@@ -845,7 +1096,7 @@ private fun ConvertBar(
         when {
             state.isRunning -> {
                 val percent = (state.progress as? ProgressState.Running)?.percent ?: 0
-                CircleProgress(percent = percent, modifier = Modifier.padding(vertical = 8.dp))
+                CircleProgress(percent = percent, modifier = Modifier.padding(vertical = AppDimens.SpaceS))
                 Spacer(Modifier.height(AppDimens.SpaceM))
                 Text(text = stringResource(R.string.tool_converting), style = MaterialTheme.typography.titleMedium)
                 if (secondsRunning >= 5) {
@@ -918,9 +1169,27 @@ private fun ResultSheetContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(AppDimens.BlockGap)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // Галочка появляется с лёгким «пружинным» масштабом — результат не выскакивает
+            // мгновенно, а как будто подтверждается.
+            var appeared by remember { mutableStateOf(false) }
+            val checkScale by animateFloatAsState(
+                targetValue = if (appeared) 1f else 0.4f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow,
+                ),
+                label = "resultCheck",
+            )
+            LaunchedEffect(Unit) { appeared = true }
+
             Box(
                 modifier = Modifier
                     .size(44.dp)
+                    .graphicsLayer {
+                        scaleX = checkScale
+                        scaleY = checkScale
+                        alpha = checkScale.coerceIn(0f, 1f)
+                    }
                     .clip(MaterialTheme.shapes.small)
                     .background(com.converterplus.app.ui.theme.SuccessGreen.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center,
@@ -1095,7 +1364,7 @@ private fun SoonContent() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(AppDimens.SpaceXl),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

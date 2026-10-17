@@ -49,7 +49,12 @@ object OcrConverter {
                     ?: throw CannotOpenFileException()
                 try {
                     onProgress(50)
-                    listOf(OcrPage(1, engine.recognize(bitmap)))
+                    val prepared = OcrPreprocess.prepare(bitmap)
+                    try {
+                        listOf(OcrPage(1, engine.recognize(prepared)))
+                    } finally {
+                        prepared.recycle()
+                    }
                 } finally {
                     bitmap.recycle()
                 }
@@ -116,7 +121,13 @@ object OcrConverter {
                 onProgress((index * 100) / numbers.size)
                 val bitmap = renderPage(renderer, number - 1, dpi)
                 try {
-                    result += OcrPage(number, engine.recognize(bitmap))
+                    val prepared = OcrPreprocess.prepare(bitmap)
+                    try {
+                        // Страница PDF — ровный документ: сегментация «один блок» точнее.
+                        result += OcrPage(number, engine.recognize(prepared, singleBlock = true))
+                    } finally {
+                        prepared.recycle()
+                    }
                 } finally {
                     bitmap.recycle()
                 }

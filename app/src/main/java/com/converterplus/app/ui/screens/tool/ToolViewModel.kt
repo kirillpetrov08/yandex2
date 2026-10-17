@@ -27,6 +27,10 @@ import com.converterplus.app.engine.PickedFile
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.engine.ToolKind
 import com.converterplus.app.engine.audio.AudioConverter
+import com.converterplus.app.engine.image.FitMode
+import com.converterplus.app.engine.image.ImageSize
+import com.converterplus.app.engine.image.ImageSizing
+import com.converterplus.app.engine.image.SizePreset
 import com.converterplus.app.engine.media.MediaProbe
 import com.converterplus.app.engine.pdf.PdfProbe
 import com.converterplus.app.engine.toMessageRes
@@ -87,6 +91,14 @@ data class ToolUiState(
     val watermark: Boolean = true,
     /** Длительность выбранного аудио — показывается под превью. */
     val audioDurationMs: Long? = null,
+    /** Выбранный шаблон размера; null — «Оригинал». */
+    val sizePreset: SizePreset? = null,
+    val customWidth: Int? = null,
+    val customHeight: Int? = null,
+    val fitMode: FitMode = FitMode.FIT,
+    /** Размер исходной картинки — нужен для честной подписи «что получится». */
+    val sourceWidth: Int? = null,
+    val sourceHeight: Int? = null,
 ) {
     val totalInputBytes: Long get() = inputs.sumOf { it.sizeBytes }
     val isRunning: Boolean get() = progress is ProgressState.Running
@@ -167,6 +179,7 @@ class ToolViewModel(
                 current.copy(inputs = merged, busy = false)
             }
             refreshFormats()
+            refreshSourceSize()
         }
     }
 
@@ -175,6 +188,7 @@ class ToolViewModel(
             current.copy(inputs = current.inputs.filterIndexed { i, _ -> i != index })
         }
         refreshFormats()
+        refreshSourceSize()
     }
 
     fun moveInput(from: Int, to: Int) {
@@ -195,6 +209,35 @@ class ToolViewModel(
     fun selectQuality(quality: QualityPreset) {
         _state.update { it.copy(quality = quality) }
         SettingsStore.qualityPreset = quality
+    }
+
+    /** Шаблон размера; null — оригинал без изменения. */
+    fun selectSizePreset(preset: SizePreset?) {
+        _state.update {
+            it.copy(
+                sizePreset = preset,
+                customWidth = null,
+                customHeight = null,
+                errorRes = null,
+            )
+        }
+    }
+
+    /** Свой размер: значения уже проверены в диалоге. */
+    fun applyCustomSize(width: Int, height: Int) {
+        if (ImageSizing.normalize(width, height) == null) return
+        _state.update {
+            it.copy(
+                sizePreset = null,
+                customWidth = width,
+                customHeight = height,
+                errorRes = null,
+            )
+        }
+    }
+
+    fun selectFitMode(mode: FitMode) {
+        _state.update { it.copy(fitMode = mode) }
     }
 
     fun selectPagesMode(mode: PagesMode) {
@@ -440,6 +483,9 @@ class ToolViewModel(
             },
             pdfDpi = current.dpi,
             pdfPageSize = current.pdfPageSize,
+            targetWidth = current.customWidth ?: current.sizePreset?.width,
+            targetHeight = current.customHeight ?: current.sizePreset?.height,
+            fitMode = current.fitMode,
         )
 
         val workName = ActiveConversions.uniqueWorkName(request.id)
@@ -551,6 +597,32 @@ class ToolViewModel(
     private fun uriOf(outcome: SaveOutcome): String = when (outcome) {
         is SaveOutcome.Content -> outcome.uri
         is SaveOutcome.Path -> Uri.fromFile(File(outcome.path)).toString()
+    }
+
+    /**
+     * Размер первого выбранного изображения. Читаем только заголовок файла
+     * (`inJustDecodeBounds`) — сам битмап в память не тянем.
+     */
+    private fun refreshSourceSize() {
+        val file = _state.value.inputs.firstOrNull()?.let { File(it.localPath) }
+        if (tool != ToolKind.IMAGES || file == null) {
+            _state.update { it.copy(sourceWidth = null, sourceHeight = null) }
+            return
+        }
+        viewModelScope.launch {
+            val size = withContext(Dispatchers.IO) {
+                runCatching {
+                    val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    android.graphics.BitmapFactory.decodeFile(file.absolutePath, options)
+                    if (options.outWidth > 0 && options.outHeight > 0) {
+                        ImageSize(options.outWidth, options.outHeight)
+                    } else {
+                        null
+                    }
+                }.getOrNull()
+            }
+            _state.update { it.copy(sourceWidth = size?.width, sourceHeight = size?.height) }
+        }
     }
 
     private fun refreshFormats() {

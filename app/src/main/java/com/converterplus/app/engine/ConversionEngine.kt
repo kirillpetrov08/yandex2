@@ -78,6 +78,9 @@ class ConversionEngine(private val context: Context) {
                 outputFormat = request.outputFormat,
                 quality = request.quality,
                 watermarkText = watermarkText,
+                targetWidth = request.targetWidth,
+                targetHeight = request.targetHeight,
+                fitMode = request.fitMode,
             )
             onProgress(((index + 1) * 100) / request.inputs.size)
         }

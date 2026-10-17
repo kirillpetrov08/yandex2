@@ -5,6 +5,7 @@ import com.converterplus.app.engine.PdfPageSize
 import com.converterplus.app.engine.PickedFile
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.engine.ToolKind
+import com.converterplus.app.engine.image.FitMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -45,6 +46,37 @@ class ConversionRequestCodecTest {
         assertEquals(images, decoded)
         assertNull(decoded?.selectedPages)
         assertTrue(decoded?.watermark == true)
+    }
+
+    @Test
+    fun `image size survives roundtrip`() {
+        val sized = request.copy(
+            tool = ToolKind.IMAGES,
+            outputFormat = "jpg",
+            targetWidth = 1920,
+            targetHeight = 1080,
+            fitMode = FitMode.CROP,
+        )
+        val decoded = ConversionRequestCodec.decode(ConversionRequestCodec.encode(sized))
+        assertEquals(1920, decoded?.targetWidth)
+        assertEquals(1080, decoded?.targetHeight)
+        assertEquals(FitMode.CROP, decoded?.fitMode)
+    }
+
+    @Test
+    fun `request without size decodes as original`() {
+        val decoded = ConversionRequestCodec.decode(ConversionRequestCodec.encode(request))
+        assertNull(decoded?.targetWidth)
+        assertNull(decoded?.targetHeight)
+        assertEquals(FitMode.FIT, decoded?.fitMode)
+    }
+
+    /** Работа, поставленная до обновления, пришла в старом формате — её нельзя терять. */
+    @Test
+    fun `legacy version one is still readable`() {
+        val encoded = ConversionRequestCodec.encode(request)
+        val legacy = encoded.replaceFirst("2\u001F", "1\u001F")
+        assertEquals(request, ConversionRequestCodec.decode(legacy))
     }
 
     @Test

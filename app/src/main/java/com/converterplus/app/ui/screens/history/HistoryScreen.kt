@@ -18,8 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -50,17 +52,21 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.converterplus.app.R
+import com.converterplus.app.data.HistoryBucket
 import com.converterplus.app.data.HistoryEntry
+import com.converterplus.app.data.HistoryGrouping
 import com.converterplus.app.data.HistoryStatus
 import com.converterplus.app.engine.Formatting
 import com.converterplus.app.storage.FileSaver
 import com.converterplus.app.ui.components.EmptyState
 import com.converterplus.app.ui.theme.AppDimens
+import com.converterplus.app.ui.theme.SuccessGreen
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * История конвертаций: поиск, фильтр по типу, свайп влево — удалить, вправо — поделиться.
@@ -117,6 +123,15 @@ fun HistoryScreen(
                     .padding(horizontal = AppDimens.ScreenPadding, vertical = AppDimens.SpaceM),
             )
 
+            if (state.query.isNotBlank() || state.formatFilter != null) {
+                Text(
+                    text = stringResource(R.string.history_count, state.entries.size, state.totalCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding),
+                )
+            }
+
             if (state.formats.isNotEmpty()) {
                 // Перенос строк вместо горизонтальной прокрутки: крайние фильтры
                 // больше не обрезаны краем экрана.
@@ -157,6 +172,13 @@ fun HistoryScreen(
                     )
                 }
             } else {
+                val sections = remember(state.entries) {
+                    // Смещение пояса нужно для календарных суток: без него «Сегодня»
+                    // начиналось бы по UTC и в Москве съезжало бы на 3 часа.
+                    val offset = TimeZone.getDefault().getOffset(System.currentTimeMillis())
+                    HistoryGrouping.group(state.entries, System.currentTimeMillis(), offset)
+                }
+
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
@@ -165,13 +187,24 @@ fun HistoryScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
                 ) {
-                    itemsIndexed(state.entries, key = { _, entry -> entry.id }) { _, entry ->
-                        SwipeableHistoryCard(
-                            entry = entry,
-                            onDelete = { viewModel.delete(entry) },
-                            onShare = { viewModel.share(entry) },
-                            onSave = { viewModel.save(entry) },
-                        )
+                    sections.forEach { section ->
+                        item(key = "header-${section.bucket.name}") {
+                            Text(
+                                text = stringResource(groupTitle(section.bucket)),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = AppDimens.SpaceXs, top = AppDimens.SpaceS),
+                            )
+                        }
+                        itemsIndexed(section.entries, key = { _, entry -> entry.id }) { _, entry ->
+                            SwipeableHistoryCard(
+                                entry = entry,
+                                onDelete = { viewModel.delete(entry) },
+                                onShare = { viewModel.share(entry) },
+                                onSave = { viewModel.save(entry) },
+                                modifier = Modifier.animateItem(),
+                            )
+                        }
                     }
                 }
             }
@@ -185,13 +218,14 @@ private fun SwipeableHistoryCard(
     onDelete: () -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val threshold = with(density) { 110.dp.toPx() }
     var offset by remember { mutableFloatStateOf(0f) }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large),
     ) {
@@ -288,17 +322,11 @@ private fun HistoryCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "${formatDate(entry.timestamp)} · ${Formatting.formatBytes(entry.sizeBytes)} · " +
-                        stringResource(
-                            id = when (entry.status) {
-                                HistoryStatus.READY -> R.string.history_status_ready
-                                HistoryStatus.SAVED -> R.string.history_status_saved
-                                HistoryStatus.FAILED -> R.string.history_status_failed
-                            },
-                        ),
+                    text = "${formatDate(entry.timestamp)} · ${Formatting.formatBytes(entry.sizeBytes)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                StatusBadge(status = entry.status)
             }
             // Кэш результатов чистится через сутки: если файла уже нет,
             // кнопка «Сохранить» только вводила бы в заблуждение.
@@ -315,6 +343,38 @@ private fun HistoryCard(
             }
         }
     }
+}
+
+/** Компактный бейдж состояния: цвет и текст вместо служебной подписи. */
+@Composable
+private fun StatusBadge(status: HistoryStatus) {
+    val (labelRes, color) = when (status) {
+        HistoryStatus.READY -> R.string.history_status_ready to MaterialTheme.colorScheme.tertiary
+        HistoryStatus.SAVED -> R.string.history_status_saved to SuccessGreen
+        HistoryStatus.FAILED -> R.string.history_status_failed to MaterialTheme.colorScheme.error
+    }
+    val description = if (status == HistoryStatus.READY) {
+        stringResource(R.string.history_status_ready_hint)
+    } else {
+        stringResource(labelRes)
+    }
+    Text(
+        text = stringResource(labelRes),
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+        modifier = Modifier
+            .semantics { contentDescription = description }
+            .padding(top = AppDimens.SpaceXs)
+            .clip(MaterialTheme.shapes.extraSmall)
+            .background(color.copy(alpha = 0.12f))
+            .padding(horizontal = AppDimens.SpaceS, vertical = 2.dp),
+    )
+}
+
+private fun groupTitle(bucket: HistoryBucket): Int = when (bucket) {
+    HistoryBucket.TODAY -> R.string.history_group_today
+    HistoryBucket.YESTERDAY -> R.string.history_group_yesterday
+    HistoryBucket.EARLIER -> R.string.history_group_earlier
 }
 
 private fun iconFor(format: String): Int = when (format.lowercase()) {

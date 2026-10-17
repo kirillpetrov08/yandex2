@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.converterplus.app.R
+import com.converterplus.app.ui.theme.AppDimens
 
 /**
  * Круговой индикатор с процентами по центру и лёгким свечением цвета акцента.
@@ -83,7 +84,7 @@ fun EmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 16.dp),
+            modifier = Modifier.padding(top = AppDimens.SpaceL),
         )
         Text(
             text = text,
