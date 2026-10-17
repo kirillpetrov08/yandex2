@@ -68,8 +68,11 @@ class HistoryGroupingTest {
             ),
             now = todayStart + 600_000L,
         )
-        assertEquals(HistoryBucket.YESTERDAY, sections[0].bucket)
-        assertEquals(HistoryBucket.TODAY, sections[1].bucket)
+        // Порядок групп всегда «Сегодня», «Вчера», «Ранее» — независимо от порядка записей.
+        assertEquals(HistoryBucket.TODAY, sections[0].bucket)
+        assertEquals(listOf("early"), sections[0].entries.map { it.id })
+        assertEquals(HistoryBucket.YESTERDAY, sections[1].bucket)
+        assertEquals(listOf("late"), sections[1].entries.map { it.id })
     }
 
     @Test
