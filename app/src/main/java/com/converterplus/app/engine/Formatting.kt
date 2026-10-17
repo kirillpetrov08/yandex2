@@ -50,6 +50,15 @@ object Formatting {
     /** Насколько файл вырос: «на 435 %». */
     fun formatGrew(percent: Int): String = "на ${abs(percent)} %"
 
+    /**
+     * Во сколько раз уменьшилась картинка: «2,1».
+     * null, если разница меньше 5 % — писать «в 1 раз» бессмысленно.
+     */
+    fun formatRatio(ratio: Double): String? {
+        if (ratio.isNaN() || ratio < 1.05) return null
+        return decimal(ratio)
+    }
+
     /** «45 сек», «3 мин 20 сек», «1 ч 05 мин». */
     fun formatDuration(millis: Long): String {
         if (millis < 0) return "0 сек"

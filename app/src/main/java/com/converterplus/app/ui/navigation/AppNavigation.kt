@@ -11,7 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.material3.NavigationBar
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -22,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -107,13 +114,28 @@ fun AppNavHost(
                     }
                     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                         bottomTabs.forEach { tab ->
+                            val selected = currentRoute == tab.route
+                            // Иконка выбранного пункта слегка «подпрыгивает» — переход
+                            // по меню становится заметным даже без анимации экрана.
+                            val iconScale by animateFloatAsState(
+                                targetValue = if (selected) 1.12f else 1f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow,
+                                ),
+                                label = "tabScale",
+                            )
                             NavigationBarItem(
-                                selected = currentRoute == tab.route,
+                                selected = selected,
                                 onClick = { navigateToTab(navController, tab.route) },
                                 icon = {
                                     Icon(
                                         painter = painterResource(tab.iconRes),
                                         contentDescription = stringResource(tab.labelRes),
+                                        modifier = Modifier.graphicsLayer {
+                                            scaleX = iconScale
+                                            scaleY = iconScale
+                                        },
                                     )
                                 },
                                 label = { Text(stringResource(tab.labelRes)) },

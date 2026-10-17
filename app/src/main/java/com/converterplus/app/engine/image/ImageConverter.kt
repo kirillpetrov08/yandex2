@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.exifinterface.media.ExifInterface
@@ -28,6 +30,9 @@ object ImageConverter {
 
     /**
      * @param watermarkText текст водяного знака; null — без водяного знака.
+     * @param targetWidth ширина результата в пикселях; null — не менять размер.
+     * @param targetHeight высота результата в пикселях; null — не менять размер.
+     * @param fitMode как вписывать в рамку: целиком или с обрезкой краёв.
      */
     fun convert(
         input: File,
@@ -35,14 +40,35 @@ object ImageConverter {
         outputFormat: String,
         quality: QualityPreset,
         watermarkText: String?,
+        targetWidth: Int? = null,
+        targetHeight: Int? = null,
+        fitMode: FitMode = FitMode.FIT,
     ): OutputArtifact {
-        val source = decode(input)
-        val prepared = if (watermarkText != null) Watermark.applyTo(source, watermarkText) else source
+        var current = decode(input)
         try {
+            // Порядок важен: сначала размер, потом водяной знак — иначе подпись
+            // масштабировалась бы вместе с фото и оказалась нечитаемой.
+            val target = ImageSizing.normalize(targetWidth, targetHeight)
+            if (target != null) {
+                val result = ImageSizing.resolve(
+                    source = ImageSize(current.width, current.height),
+                    target = target,
+                    mode = fitMode,
+                )
+                val resized = scale(current, result, fitMode)
+                if (resized !== current) current.recycle()
+                current = resized
+            }
+            if (watermarkText != null) {
+                val marked = Watermark.applyTo(current, watermarkText)
+                if (marked !== current) current.recycle()
+                current = marked
+            }
+
             output.parentFile?.mkdirs()
             FileOutputStream(output).use { stream ->
                 val (format, level) = compressFormat(outputFormat, quality)
-                val ok = prepared.compress(format, level, stream)
+                val ok = current.compress(format, level, stream)
                 if (!ok) throw UnsupportedFormatException(outputFormat)
                 stream.flush()
             }
@@ -50,8 +76,7 @@ object ImageConverter {
             if (output.length() == 0L) output.delete()
             throw e
         } finally {
-            if (prepared !== source) prepared.recycle()
-            source.recycle()
+            current.recycle()
         }
         if (!output.exists() || output.length() == 0L) throw OutOfSpaceException()
         return OutputArtifact(
@@ -59,6 +84,54 @@ object ImageConverter {
             name = output.name,
             bytes = output.length(),
         )
+    }
+
+    /**
+     * Приводит картинку к нужному размеру.
+     *
+     * Уменьшение идёт ступенями (вдвое), а не одним прыжком: так пиксели не «слипаются»
+     * и края остаются резкими. Для обрезки рисуем центр исходника в кадр целиком.
+     */
+    private fun scale(source: Bitmap, result: ImageSize, fitMode: FitMode): Bitmap {
+        if (result.width == source.width && result.height == source.height) return source
+
+        // Для вписывания заранее уменьшаем по целым кратностям — это резче и экономнее по памяти.
+        var step = source
+        if (fitMode == FitMode.FIT) {
+            while (step.width / 2 >= result.width && step.height / 2 >= result.height) {
+                val half = Bitmap.createScaledBitmap(step, step.width / 2, step.height / 2, true)
+                if (step !== source) step.recycle()
+                step = half
+            }
+        }
+
+        val target = Bitmap.createBitmap(result.width, result.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(target)
+        if (fitMode == FitMode.CROP) {
+            val scaleFactor = maxOf(
+                result.width.toFloat() / step.width,
+                result.height.toFloat() / step.height,
+            )
+            val drawnWidth = step.width * scaleFactor
+            val drawnHeight = step.height * scaleFactor
+            val left = (result.width - drawnWidth) / 2f
+            val top = (result.height - drawnHeight) / 2f
+            canvas.drawBitmap(
+                step,
+                null,
+                RectF(left, top, left + drawnWidth, top + drawnHeight),
+                Paint(Paint.FILTER_BITMAP_FLAG),
+            )
+        } else {
+            canvas.drawBitmap(
+                step,
+                null,
+                RectF(0f, 0f, result.width.toFloat(), result.height.toFloat()),
+                Paint(Paint.FILTER_BITMAP_FLAG),
+            )
+        }
+        if (step !== source) step.recycle()
+        return target
     }
 
     /** Декодирует файл любого поддерживаемого формата с учётом EXIF-ориентации. */

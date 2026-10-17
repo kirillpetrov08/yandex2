@@ -44,4 +44,21 @@ object AppDimens {
     /** Минимальный отступ баннера от интерактивных элементов (требование РСЯ — не менее 12dp). */
     val BannerSafeGap = 16.dp
     val MinTouchTarget = 48.dp
+
+    /**
+     * Иконки по ролям, а не по пикселям: если понадобится увеличить весь интерфейс,
+     * достаточно поменять значения здесь.
+     */
+    val IconSmall = 14.dp
+    val IconMedium = 18.dp
+    val IconLarge = 20.dp
+    val IconXLarge = 24.dp
+    val IconHero = 64.dp
+
+    /** Кнопки-иконки и аватары в шапках. */
+    val ButtonSmall = 36.dp
+    val ButtonMedium = 44.dp
+
+    /** Высота нижней панели конвертации и панели инструментов. */
+    val BarHeight = 54.dp
 }

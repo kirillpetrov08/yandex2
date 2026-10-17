@@ -5,6 +5,7 @@ import com.converterplus.app.engine.PdfPageSize
 import com.converterplus.app.engine.PickedFile
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.engine.ToolKind
+import com.converterplus.app.engine.image.FitMode
 
 /**
  * Упаковка запроса в одну строку для передачи в WorkManager (Data).
@@ -16,7 +17,9 @@ object ConversionRequestCodec {
 
     private const val FIELD = '\u001F'
     private const val RECORD = '\u001E'
-    private const val VERSION = "1"
+    /** Версия 2 добавила размер результата; версия 1 читается для работ, поставленных до обновления. */
+    private const val VERSION = "2"
+    private const val VERSION_LEGACY = "1"
 
     fun encode(request: ConversionRequest): String {
         val header = listOf(
@@ -29,6 +32,9 @@ object ConversionRequestCodec {
             request.pdfDpi.toString(),
             request.pdfPageSize.name,
             request.selectedPages?.joinToString(",") { it.toString() }.orEmpty(),
+            request.targetWidth?.toString().orEmpty(),
+            request.targetHeight?.toString().orEmpty(),
+            request.fitMode.name,
         ).joinToString(FIELD.toString())
 
         val inputs = request.inputs.joinToString(RECORD.toString()) { file ->
@@ -49,7 +55,8 @@ object ConversionRequestCodec {
         if (records.size < 2) return null
 
         val header = records[0].split(FIELD)
-        if (header.size < 9 || header[0] != VERSION) return null
+        if (header.size < 9) return null
+        if (header[0] != VERSION && header[0] != VERSION_LEGACY) return null
 
         val tool = ToolKind.fromId(header[2]) ?: return null
         val quality = runCatching { QualityPreset.valueOf(header[4]) }.getOrNull() ?: return null
@@ -58,6 +65,11 @@ object ConversionRequestCodec {
             .split(',')
             .mapNotNull { it.toIntOrNull() }
             .takeIf { it.isNotEmpty() }
+
+        val targetWidth = header.getOrNull(9)?.toIntOrNull()
+        val targetHeight = header.getOrNull(10)?.toIntOrNull()
+        val fitMode = runCatching { FitMode.valueOf(header.getOrNull(11).orEmpty()) }
+            .getOrDefault(FitMode.FIT)
 
         val inputs = records.drop(1)
             .filter { it.isNotBlank() }
@@ -83,6 +95,10 @@ object ConversionRequestCodec {
             selectedPages = pages,
             pdfDpi = header[6].toIntOrNull() ?: ConversionRequest.DPI_LOW,
             pdfPageSize = pageSize,
+            // Если размер не сохранён (старая версия) или битый — просто оригинал.
+            targetWidth = targetWidth?.takeIf { it > 0 },
+            targetHeight = targetHeight?.takeIf { it > 0 },
+            fitMode = fitMode,
         )
     }
 }

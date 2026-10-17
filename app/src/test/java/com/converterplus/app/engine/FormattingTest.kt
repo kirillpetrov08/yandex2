@@ -70,6 +70,15 @@ class FormattingTest {
     }
 
     @Test
+    fun `shrink ratio is human readable`() {
+        assertEquals("2,1", Formatting.formatRatio(2.1))
+        assertEquals("12,3", Formatting.formatRatio(12.34))
+        assertNull(Formatting.formatRatio(1.0))
+        assertNull(Formatting.formatRatio(1.04))
+        assertNull(Formatting.formatRatio(Double.NaN))
+    }
+
+    @Test
     fun `duration formatting`() {
         assertEquals("0 сек", Formatting.formatDuration(0))
         assertEquals("45 сек", Formatting.formatDuration(45_000))

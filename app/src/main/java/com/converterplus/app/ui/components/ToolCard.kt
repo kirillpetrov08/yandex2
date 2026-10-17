@@ -134,7 +134,7 @@ fun SoonBadge(modifier: Modifier = Modifier) {
             text = stringResource(R.string.tool_soon),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = AppDimens.SpaceXs),
         )
     }
 }

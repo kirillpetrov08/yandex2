@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.converterplus.app.R
+import com.converterplus.app.ui.theme.AppDimens
 import com.converterplus.app.engine.Formatting
 import com.converterplus.app.engine.PickedFile
 import com.converterplus.app.engine.image.ImageConverter
@@ -62,7 +63,7 @@ fun OrderedThumbnails(
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
     ) {
         itemsIndexed(items, key = { _, item -> item.localPath }) { index, item ->
             val translation = when {

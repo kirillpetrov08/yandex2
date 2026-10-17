@@ -119,7 +119,7 @@ if (!adsTestMode) {
 // ---------------------------------------------------------------------------
 // Версия приложения. По умолчанию 1 / «1.0.0».
 // Перед загрузкой в магазин версию можно поднять, не трогая код:
-//   gradlew.bat assembleRelease -PversionCode=2 -PversionName=1.0.1
+//   gradlew.bat assembleRelease -PversionCode=3 -PversionName=1.0.2
 //   или переменными окружения VERSION_CODE / VERSION_NAME (так делает CI —
 //   в форме запуска воркфлоу есть поля versionCode и versionName, см. docs/CI_BUILD.md).
 // ---------------------------------------------------------------------------
@@ -130,10 +130,10 @@ val versionNameOverride: String? =
     (System.getenv("VERSION_NAME") ?: (project.findProperty("versionName") as? String))
         ?.trim()?.takeIf { it.isNotEmpty() }
 
-// Версия по умолчанию поднята вместе с исправлениями крэшей: 1.0.1 / versionCode 2.
+// Версия 1.0.2: размеры результата, чистый OCR и оформление истории.
 // Магазин принимает загрузку только со строго большим versionCode.
-val appVersionCode: Int = versionCodeOverride ?: 2
-val appVersionName: String = versionNameOverride ?: "1.0.1"
+val appVersionCode: Int = versionCodeOverride ?: 3
+val appVersionName: String = versionNameOverride ?: "1.0.2"
 
 if (versionCodeOverride != null || versionNameOverride != null) {
     logger.lifecycle("Версия переопределена: versionCode=$appVersionCode, versionName=$appVersionName")

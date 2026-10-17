@@ -152,7 +152,7 @@ private fun FormatChip(
                     option.disabledReasonRes?.let(onDisabledClick)
                 }
             }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = AppDimens.SpaceL, vertical = AppDimens.SpaceM),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
