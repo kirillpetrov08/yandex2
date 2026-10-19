@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">Копилка</string>
+    <string name="app_subtitle">Финансы офлайн</string>
 
-    <!-- ============ Общие ============ -->
-    <string name="app_name">Конвертер+</string>
-    <string name="app_subtitle">Всё в одном месте</string>
-
-    <string name="action_convert">Конвертировать</string>
+    <string name="action_convert">Сохранить</string>
     <string name="action_save">Сохранить</string>
     <string name="action_save_all">Сохранить всё</string>
     <string name="action_share">Поделиться</string>
@@ -24,54 +22,64 @@
     <string name="action_move_down">Опустить ниже</string>
     <string name="action_remove_watermark">Убрать водяной знак</string>
     <string name="action_watch_short_video">Посмотрите короткое видео</string>
+    <string name="action_apply">Применить</string>
+    <string name="action_add">Добавить</string>
+    <string name="action_edit">Изменить</string>
+    <string name="action_done">Готово</string>
 
-    <!-- ============ Онбординг ============ -->
-    <string name="onboarding_title_1">Все конвертеры в одном приложении</string>
-    <string name="onboarding_text_1">Изображения, PDF и документы. Без регистрации и лишних программ.</string>
-    <string name="onboarding_title_2">Работает без интернета</string>
-    <string name="onboarding_text_2">Файлы не покидают телефон: вся обработка идёт прямо на устройстве.</string>
-    <string name="onboarding_title_3">Быстро, красиво и бесплатно</string>
-    <string name="onboarding_text_3">Три нажатия — и файл готов. Приложение бесплатное, его поддерживает реклама.</string>
+    <string name="onboarding_title_1">Все финансы в одном месте</string>
+    <string name="onboarding_text_1">Учёт расходов и доходов без интернета. Данные хранятся только на телефоне.</string>
+    <string name="onboarding_title_2">Работает офлайн</string>
+    <string name="onboarding_text_2">Никаких регистраций и подписок. Открыли — записали трату — увидели баланс.</string>
+    <string name="onboarding_title_3">Бюджеты и напоминания</string>
+    <string name="onboarding_text_3">Лимиты по категориям, повторы платежей и красивые графики — всё без интернета.</string>
     <string name="onboarding_consent_title">Реклама и данные</string>
-    <string name="onboarding_consent_text">Реклама помогает приложению оставаться бесплатным. Если включить персонализацию, объявления будут подбираться по данным рекламных сервисов Яндекса. Ваши файлы никуда не отправляются.</string>
+    <string name="onboarding_consent_text">Реклама помогает приложению оставаться бесплатным. Если включить персонализацию, объявления будут подбираться по данным рекламных сервисов Яндекса. Ваши финансы никуда не отправляются.</string>
     <string name="onboarding_consent_switch">Персонализированная реклама</string>
     <string name="onboarding_privacy_link">Политика конфиденциальности</string>
     <string name="onboarding_finish">Принять и продолжить</string>
 
-    <!-- ============ Главная ============ -->
-    <string name="home_quick_start">Быстрый старт</string>
-    <string name="home_all_tools">Все инструменты</string>
+    <string name="home_quick_start">Баланс</string>
+    <string name="home_all_tools">Категории</string>
+    <string name="home_recent">Последние операции</string>
+    <string name="home_budgets">Бюджеты на месяц</string>
+    <string name="home_stats">Статистика</string>
+    <string name="home_add_expense">Расход</string>
+    <string name="home_add_income">Доход</string>
+    <string name="home_add_transfer">Перевод</string>
+    <string name="home_total_balance">Общий баланс</string>
+    <string name="home_month_spent">Потрачено в этом месяце</string>
+    <string name="home_month_income">Получено в этом месяце</string>
+    <string name="home_empty_hint">Добавьте первую операцию — и увидите, куда уходят деньги.</string>
 
-    <string name="tool_images_title">Изображения</string>
-    <string name="tool_images_subtitle">JPG, PNG, WEBP</string>
-    <string name="tool_pdf_to_images_title">PDF → Фото</string>
-    <string name="tool_pdf_to_images_subtitle">Страницы PDF в картинки</string>
-    <string name="tool_images_to_pdf_title">Фото → PDF</string>
-    <string name="tool_images_to_pdf_subtitle">Картинки в один PDF</string>
-    <string name="tool_ocr_title">Извлечение текста</string>
-    <string name="tool_ocr_subtitle">Текст из картинки и PDF</string>
-    <string name="tool_audio_title">Аудио</string>
-    <string name="tool_audio_subtitle">MP3, WAV, M4A</string>
-    <string name="tool_video_title">Видео</string>
-    <string name="tool_video_subtitle">MP4, MOV, MKV</string>
-
+    <string name="tool_images_title">Продукты</string>
+    <string name="tool_images_subtitle">Супермаркеты, рынки</string>
+    <string name="tool_pdf_to_images_title">Транспорт</string>
+    <string name="tool_pdf_to_images_subtitle">Такси, бензин, проезд</string>
+    <string name="tool_images_to_pdf_title">Жильё</string>
+    <string name="tool_images_to_pdf_subtitle">Аренда, ЖКХ, ремонт</string>
+    <string name="tool_ocr_title">Подписки</string>
+    <string name="tool_ocr_subtitle">Связь, сервисы, кино</string>
+    <string name="tool_audio_title">Развлечения</string>
+    <string name="tool_audio_subtitle">Кафе, игры, хобби</string>
+    <string name="tool_video_title">Здоровье</string>
+    <string name="tool_video_subtitle">Аптеки, врачи, спорт</string>
     <string name="tool_soon">Скоро</string>
     <string name="tool_soon_message">Инструмент появится в ближайшем обновлении — устанавливать ничего не придётся.</string>
-    <string name="tool_soon_hint">Пока доступны инструменты выше. Загляните сюда после обновления.</string>
+    <string name="tool_soon_hint">Пока доступны категории выше. Загляните сюда после обновления.</string>
 
-    <!-- ============ Экран инструмента ============ -->
-    <string name="tool_pick_file_title">Выберите файл</string>
-    <string name="tool_pick_file_hint">Нажмите, чтобы выбрать файл</string>
+    <string name="tool_pick_file_title">Чек</string>
+    <string name="tool_pick_file_hint">Прикрепить фото чека (необязательно)</string>
     <string name="tool_recent_files">Недавние</string>
-    <string name="tool_format">Формат результата</string>
-    <string name="tool_pages">Страницы</string>
+    <string name="tool_format">Категория</string>
+    <string name="tool_pages">Счёт</string>
     <string name="tool_pages_all">Все страницы</string>
     <string name="tool_pages_pick">Выбрать страницы</string>
     <string name="tool_page_size">Размер страницы</string>
     <string name="tool_page_size_a4">A4</string>
     <string name="tool_page_size_fit">По размеру фото</string>
     <string name="tool_quality">Качество</string>
-    <string name="tool_size_title">Размер результата</string>
+    <string name="tool_size_title">Период</string>
     <string name="tool_size_original">Оригинал</string>
     <string name="tool_size_original_hint">Размер не меняем</string>
     <string name="tool_size_custom">Свой размер</string>
@@ -91,28 +99,26 @@
     <string name="tool_size_width">Ширина, px</string>
     <string name="tool_size_height">Высота, px</string>
     <string name="tool_size_range_error">Допустимо от 16 до 8192 px</string>
-    <string name="action_apply">Применить</string>
     <string name="tool_order_title">Порядок страниц</string>
     <string name="tool_order_hint">Перетащите карточку или используйте стрелки</string>
     <string name="tool_files_count">Файлов выбрано: %1$d</string>
     <string name="tool_pages_count">Страниц: %1$d</string>
     <string name="tool_add_more">Добавить ещё</string>
-    <string name="tool_converting">Конвертируем…</string>
+    <string name="tool_converting">Сохраняем…</string>
     <string name="tool_converting_slow">Это может занять немного времени…</string>
     <string name="tool_result_title">Готово!</string>
-    <string name="tool_result_subtitle">Файл готов — сохраните его или поделитесь</string>
+    <string name="tool_result_subtitle">Операция сохранена — её видно в истории и статистике</string>
     <string name="tool_result_grew">Файл стал больше</string>
     <string name="tool_result_text_preview">Начало текста</string>
     <string name="tool_result_before">Было</string>
     <string name="tool_result_after">Стало</string>
     <string name="tool_result_saved">Экономия</string>
     <string name="tool_result_files">Файлов: %1$d</string>
-    <string name="tool_result_watermark_note">В бесплатной версии на изображения и PDF добавляется небольшой водяной знак.</string>
+    <string name="tool_result_watermark_note">В бесплатной версии на экспорте небольшой водяной знак.</string>
     <string name="tool_watermark_removed">Водяной знак убран. Спасибо за поддержку!</string>
     <string name="tool_saved_to_downloads">Сохранено в «Загрузки»</string>
     <string name="tool_saved_to_folder">Сохранено в выбранную папку</string>
 
-    <!-- ============ Форматы ============ -->
     <string name="format_jpg">JPG</string>
     <string name="format_png">PNG</string>
     <string name="format_webp">WEBP</string>
@@ -122,7 +128,6 @@
     <string name="format_m4a">M4A</string>
     <string name="format_ogg">OGG/Opus</string>
     <string name="format_mp4">MP4</string>
-
     <string name="hint_jpg">лучше всего для веба</string>
     <string name="hint_png">без потери качества</string>
     <string name="hint_webp">меньше размер</string>
@@ -135,7 +140,6 @@
     <string name="format_audio_only">Только звук (M4A)</string>
     <string name="hint_audio_only">взять звук из видео</string>
 
-    <!-- Причины недоступности форматов -->
     <string name="reason_heic_needs_android9">HEIC открывается только на Android 9 и новее</string>
     <string name="reason_avif_needs_android12">AVIF открывается только на Android 12 и новее</string>
     <string name="reason_format_not_supported">Этот формат пока не поддерживается</string>
@@ -146,13 +150,12 @@
     <string name="reason_tool_soon">Инструмент появится в ближайшем обновлении</string>
     <string name="reason_wrong_file_type">Для этого инструмента нужен другой тип файла</string>
 
-    <!-- ============ Ошибки ============ -->
-    <string name="err_no_input">Сначала выберите файл</string>
+    <string name="err_no_input">Сначала введите сумму</string>
     <string name="err_no_space">Не хватает места на телефоне. Освободите немного памяти и попробуйте снова</string>
     <string name="err_cannot_open">Не удалось открыть файл. Возможно, он повреждён</string>
-    <string name="err_generic">Не удалось конвертировать. Попробуйте другой формат</string>
+    <string name="err_generic">Не удалось сохранить. Попробуйте ещё раз</string>
     <string name="err_pdf_empty">В этом PDF нет страниц</string>
-    <string name="err_cancelled">Конвертация отменена</string>
+    <string name="err_cancelled">Операция отменена</string>
     <string name="err_pick_failed">Не удалось прочитать файл. Попробуйте выбрать другой</string>
     <string name="err_no_pages_selected">Выберите хотя бы одну страницу</string>
     <string name="err_no_audio_track">В этом файле нет звуковой дорожки</string>
@@ -163,7 +166,6 @@
     <string name="err_ocr_init">Не удалось запустить распознавание текста. Попробуйте ещё раз</string>
     <string name="err_ocr_no_text">Текст не найден. Попробуйте более чёткое фото или другой файл</string>
 
-    <!-- ============ Аудио, видео, распознавание текста ============ -->
     <string name="tool_audio_duration">Длительность: %1$s</string>
     <string name="tool_pages_ocr">Страницы для распознавания</string>
     <string name="tool_ocr_precision_title">Точное распознавание</string>
@@ -177,27 +179,24 @@
     <string name="settings_ocr_data_pending">Подготовятся при первом распознавании</string>
     <string name="cd_audio_preview">Превью аудиофайла</string>
 
-    <!-- ============ Диалоги ============ -->
     <string name="dialog_same_format_title">Файл уже в этом формате</string>
     <string name="dialog_same_format_text">Файл уже в этом формате. Всё равно конвертировать?</string>
-    <string name="dialog_big_file_title">Большой файл</string>
-    <string name="dialog_big_file_text">Файл больше 200 МБ. Конвертация может занять несколько минут.</string>
+    <string name="dialog_big_file_title">Большая сумма</string>
+    <string name="dialog_big_file_text">Сумма больше 1 000 000 ₽. Всё верно?</string>
 
-    <!-- ============ Уведомления ============ -->
-    <string name="notif_channel_name">Конвертация файлов</string>
-    <string name="notif_channel_description">Прогресс конвертации и сообщение о готовности</string>
-    <string name="notif_progress_title">Конвертируем</string>
+    <string name="notif_channel_name">Копилка</string>
+    <string name="notif_channel_description">Напоминания о платежах и экспорт</string>
+    <string name="notif_progress_title">Сохраняем</string>
     <string name="notif_action_cancel">Отменить</string>
     <string name="notif_done_title">Готово</string>
-    <string name="notif_done_text">Откройте приложение, чтобы сохранить результат</string>
-    <string name="notif_failed_title">Не удалось конвертировать</string>
+    <string name="notif_done_text">Откройте приложение, чтобы посмотреть</string>
+    <string name="notif_failed_title">Не удалось сохранить</string>
     <string name="notif_failed_text">Нажмите, чтобы посмотреть подробности</string>
 
-    <!-- ============ История ============ -->
     <string name="history_title">История</string>
-    <string name="history_empty_title">Здесь появятся ваши конвертации</string>
-    <string name="history_empty_text">Конвертируйте первый файл — он сохранится в этом списке.</string>
-    <string name="history_search_hint">Поиск по названию</string>
+    <string name="history_empty_title">Здесь появятся ваши операции</string>
+    <string name="history_empty_text">Добавьте первый расход или доход — он появится в списке.</string>
+    <string name="history_search_hint">Поиск по комментарию</string>
     <string name="history_filter_all">Все</string>
     <string name="history_status_ready">В кэше</string>
     <string name="history_status_ready_hint">Временный файл: сохраните, пока он не удалён</string>
@@ -211,57 +210,85 @@
     <string name="history_no_file">Файл недоступен: временная копия удалена системой</string>
     <string name="history_share">Поделиться</string>
 
-    <!-- ============ Настройки ============ -->
     <string name="settings_title">Настройки</string>
     <string name="settings_section_files">Файлы</string>
     <string name="settings_section_appearance">Внешний вид</string>
     <string name="settings_section_ocr">Распознавание текста</string>
     <string name="settings_section_ads">Реклама</string>
     <string name="settings_section_about">О приложении</string>
-
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
     <string name="settings_theme_system">Как в системе</string>
-
     <string name="settings_folder">Папка сохранения</string>
     <string name="settings_folder_default">«Загрузки» (по умолчанию)</string>
     <string name="settings_folder_chosen">Своя папка</string>
     <string name="settings_folder_reset">Вернуть «Загрузки»</string>
-
     <string name="settings_quality">Качество по умолчанию</string>
     <string name="settings_quality_max">Максимальное</string>
     <string name="settings_quality_balanced">Сбалансированное</string>
     <string name="settings_quality_min">Минимальный размер</string>
-
     <string name="settings_notifications">Показывать прогресс в шторке</string>
     <string name="settings_haptics">Вибрация при успехе</string>
-
     <string name="settings_remove_ads">Убрать рекламу</string>
     <string name="settings_personalized">Персонализированная реклама</string>
     <string name="settings_version">Версия %1$s</string>
     <string name="settings_privacy">Политика конфиденциальности</string>
     <string name="settings_write_developer">Написать разработчику</string>
 
-    <!-- ============ Экран «Убрать рекламу» ============ -->
     <string name="remove_ads_title">Убрать рекламу</string>
-    <string name="remove_ads_text">Посмотрите короткое видео — и 30 минут реклама показываться не будет, а водяной знак с результатов исчезнет. Подписки нет и не будет: приложение остаётся бесплатным.</string>
+    <string name="remove_ads_text">Посмотрите короткое видео — и 30 минут реклама показываться не будет, а водяной знак с экспорта исчезнет. Подписок нет.</string>
     <string name="remove_ads_button">Посмотреть видео</string>
     <string name="remove_ads_active">Реклама скрыта ещё %1$s</string>
     <string name="remove_ads_unavailable">Реклама сейчас недоступна. Попробуйте чуть позже.</string>
     <string name="remove_ads_thanks">Спасибо! Реклама скрыта на 30 минут</string>
     <string name="remove_ads_no_reward">Ролик закрыт раньше времени — награда не выдана.</string>
-
-    <!-- ============ Водяной знак ============ -->
-    <string name="watermark_text">Конвертер+</string>
-
-    <!-- ============ Content descriptions ============ -->
+    <string name="watermark_text">Копилка</string>
     <string name="cd_back">Назад</string>
     <string name="cd_app_logo">Логотип приложения</string>
     <string name="cd_tool_icon">Иконка инструмента</string>
     <string name="cd_file_preview">Превью выбранного файла</string>
-    <string name="cd_progress">Прогресс конвертации</string>
-    <string name="cd_remove_file">Убрать файл из списка</string>
+    <string name="cd_progress">Прогресс</string>
+    <string name="cd_remove_file">Убрать</string>
     <string name="cd_empty_history">Иллюстрация пустой истории</string>
 
+    <!-- Финансы -->
+    <string name="finance_expense">Расход</string>
+    <string name="finance_income">Доход</string>
+    <string name="finance_transfer">Перевод</string>
+    <string name="finance_amount">Сумма</string>
+    <string name="finance_amount_hint">0,00 ₽</string>
+    <string name="finance_category">Категория</string>
+    <string name="finance_account">Счёт</string>
+    <string name="finance_date">Дата</string>
+    <string name="finance_comment">Комментарий</string>
+    <string name="finance_comment_hint">Например, продукты в Пятёрочке</string>
+    <string name="finance_receipt">Чек</string>
+    <string name="finance_repeat">Повторять</string>
+    <string name="finance_repeat_never">Не повторять</string>
+    <string name="finance_repeat_daily">Каждый день</string>
+    <string name="finance_repeat_weekly">Каждую неделю</string>
+    <string name="finance_repeat_monthly">Каждый месяц</string>
+    <string name="finance_accounts">Счета</string>
+    <string name="finance_cash">Наличные</string>
+    <string name="finance_card">Карта</string>
+    <string name="finance_savings">Накопления</string>
+    <string name="finance_budget">Бюджет</string>
+    <string name="finance_budget_hint">Лимит на месяц</string>
+    <string name="finance_budget_left">Осталось %1$s</string>
+    <string name="finance_budget_over">Превышен на %1$s</string>
+    <string name="finance_chart_month">За месяц</string>
+    <string name="finance_chart_year">За год</string>
+    <string name="finance_export">Экспорт</string>
+    <string name="finance_export_csv">Экспорт CSV</string>
+    <string name="finance_export_pdf">Экспорт PDF</string>
+    <string name="finance_search_hint">Поиск</string>
+    <string name="finance_no_budgets">Бюджеты не настроены</string>
+    <string name="finance_add_budget">Добавить бюджет</string>
+    <string name="finance_period">Период</string>
+    <string name="finance_all_time">Всё время</string>
+    <string name="finance_today">Сегодня</string>
+    <string name="finance_yesterday">Вчера</string>
+    <string name="finance_this_week">Неделя</string>
+    <string name="finance_this_month">Месяц</string>
 </resources>

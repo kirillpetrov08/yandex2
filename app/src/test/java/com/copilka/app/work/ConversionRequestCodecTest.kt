@@ -1,0 +1,114 @@
+package com.copilka.app.work
+
+import com.copilka.app.engine.ConversionRequest
+import com.copilka.app.engine.PdfPageSize
+import com.copilka.app.engine.PickedFile
+import com.copilka.app.engine.QualityPreset
+import com.copilka.app.engine.ToolKind
+import com.copilka.app.engine.image.FitMode
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ConversionRequestCodecTest {
+
+    private val request = ConversionRequest(
+        id = "req-123",
+        tool = ToolKind.PDF_TO_IMAGES,
+        inputs = listOf(
+            PickedFile("/cache/inputs/req-123/doc.pdf", "doc.pdf", 20480, "application/pdf"),
+            PickedFile("/cache/inputs/req-123/отчёт.pdf", "отчёт.pdf", 1024, null),
+        ),
+        outputFormat = "png",
+        quality = QualityPreset.MAX,
+        watermark = false,
+        selectedPages = listOf(1, 3, 5),
+        pdfDpi = 300,
+        pdfPageSize = PdfPageSize.FIT_IMAGE,
+    )
+
+    @Test
+    fun `roundtrip keeps every field`() {
+        assertEquals(request, ConversionRequestCodec.decode(ConversionRequestCodec.encode(request)))
+    }
+
+    @Test
+    fun `images request roundtrip`() {
+        val images = ConversionRequest(
+            id = "img-1",
+            tool = ToolKind.IMAGES,
+            inputs = listOf(PickedFile("/c/photo.jpg", "photo.jpg", 999, "image/jpeg")),
+            outputFormat = "webp",
+            quality = QualityPreset.MIN_SIZE,
+        )
+        val decoded = ConversionRequestCodec.decode(ConversionRequestCodec.encode(images))
+        assertEquals(images, decoded)
+        assertNull(decoded?.selectedPages)
+        assertTrue(decoded?.watermark == true)
+    }
+
+    @Test
+    fun `image size survives roundtrip`() {
+        val sized = request.copy(
+            tool = ToolKind.IMAGES,
+            outputFormat = "jpg",
+            targetWidth = 1920,
+            targetHeight = 1080,
+            fitMode = FitMode.CROP,
+        )
+        val decoded = ConversionRequestCodec.decode(ConversionRequestCodec.encode(sized))
+        assertEquals(1920, decoded?.targetWidth)
+        assertEquals(1080, decoded?.targetHeight)
+        assertEquals(FitMode.CROP, decoded?.fitMode)
+    }
+
+    @Test
+    fun `request without size decodes as original`() {
+        val decoded = ConversionRequestCodec.decode(ConversionRequestCodec.encode(request))
+        assertNull(decoded?.targetWidth)
+        assertNull(decoded?.targetHeight)
+        assertEquals(FitMode.FIT, decoded?.fitMode)
+    }
+
+    /** Работа, поставленная до обновления, пришла в старом формате — её нельзя терять. */
+    @Test
+    fun `legacy version one is still readable`() {
+        val encoded = ConversionRequestCodec.encode(request)
+        val legacy = encoded.replaceFirst("2\u001F", "1\u001F")
+        assertEquals(request, ConversionRequestCodec.decode(legacy))
+    }
+
+    @Test
+    fun `garbage input returns null`() {
+        assertNull(ConversionRequestCodec.decode(null))
+        assertNull(ConversionRequestCodec.decode(""))
+        assertNull(ConversionRequestCodec.decode("not-a-request"))
+    }
+
+    @Test
+    fun `unknown tool id returns null`() {
+        val broken = ConversionRequestCodec.encode(request).replace("pdf_to_images", "teleport")
+        assertNull(ConversionRequestCodec.decode(broken))
+    }
+
+    @Test
+    fun `request without inputs returns null`() {
+        val broken = ConversionRequestCodec.encode(
+            ConversionRequest(
+                id = "x",
+                tool = ToolKind.IMAGES,
+                inputs = emptyList(),
+                outputFormat = "jpg",
+                quality = QualityPreset.BALANCED,
+            ),
+        )
+        assertNull(ConversionRequestCodec.decode(broken))
+    }
+
+    @Test
+    fun `file names with spaces and cyrillic survive`() {
+        val decoded = ConversionRequestCodec.decode(ConversionRequestCodec.encode(request))
+        assertEquals("отчёт.pdf", decoded?.inputs?.get(1)?.displayName)
+    }
+}

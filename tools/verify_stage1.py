@@ -5,7 +5,7 @@
   1. Все XML-ресурсы и манифест хорошо сформированы.
   2. Каждый R.string.* / @string/* ссылается на существующую строку.
   3. Каждый R.drawable.* / R.mipmap.* / @drawable/* / @mipmap/* существует.
-  4. Внутренние импорты (com.converterplus.app.*) ведут на реально объявленные классы.
+  4. Внутренние импорты (com.copilka.app.*) ведут на реально объявленные классы.
   5. Классы из AndroidManifest.xml существуют в исходниках.
   6. Баланс скобок в каждом .kt файле (ловит обрезанные файлы).
   7. Нет маркеров-заглушек (TODO / FIXME / "здесь будет").
@@ -162,7 +162,7 @@ def build_symbol_index() -> dict[str, set[str]]:
 
 
 def check_imports(index: dict[str, set[str]]) -> None:
-    import_pattern = re.compile(r"^import\s+(com\.converterplus\.app\.[\w.]+)", re.MULTILINE)
+    import_pattern = re.compile(r"^import\s+(com\.copilka\.app\.[\w.]+)", re.MULTILINE)
     for path in kt_files(MAIN_JAVA) + kt_files(TEST_JAVA):
         text = open(path, encoding="utf-8").read()
         for fq in import_pattern.findall(text):
@@ -187,7 +187,7 @@ def check_manifest() -> None:
     for name in re.findall(r'android:name="\.([A-Za-z0-9_.]+)"', text):
         parts = name.split(".")
         prefix = ".".join(parts[:-1])
-        package = "com.converterplus.app." + prefix if prefix else "com.converterplus.app"
+        package = "com.copilka.app." + prefix if prefix else "com.copilka.app"
         symbol = parts[-1]
         if symbol not in index.get(package, set()):
             errors.append(f"AndroidManifest.xml: .{name} не найден в {package}")
@@ -227,7 +227,7 @@ KOTLIN_BUILTIN = {
 def check_missing_imports(index: dict[str, set[str]]) -> None:
     """Символ объявлен в проекте, но используется без импорта и вне своего пакета.
 
-    Полностью квалифицированные ссылки (com.converterplus.app.X.Y) импорта не требуют,
+    Полностью квалифицированные ссылки (com.copilka.app.X.Y) импорта не требуют,
     поэтому идентификаторы после точки не учитываются.
     """
     class_owner: dict[str, set[str]] = {}
