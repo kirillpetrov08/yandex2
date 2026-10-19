@@ -204,6 +204,9 @@ dependencies {
     implementation("androidx.documentfile:documentfile:1.0.1")
     implementation("androidx.exifinterface:exifinterface:1.4.1")
     implementation("com.yandex.android:mobileads:8.6.0")
+    implementation("androidx.media3:media3-transformer:1.11.1")
+    implementation("androidx.media3:media3-common:1.11.1")
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
 }
