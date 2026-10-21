@@ -92,7 +92,9 @@ fun FilePreview(
         kind == PreviewKind.TEXT && !currentText.isNullOrBlank() ->
             TextPreview(text = currentText.orEmpty(), modifier = frame)
 
-        currentBitmap != null -> Box(
+        currentBitmap != null &&
+            !currentBitmap.isRecycled &&
+            currentBitmap.config != Bitmap.Config.HARDWARE -> Box(
             modifier = frame.height(PREVIEW_HEIGHT),
             contentAlignment = Alignment.Center,
         ) {

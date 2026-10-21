@@ -112,20 +112,24 @@ fun OrderedThumbnails(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Thumb(path = item.localPath)
-                Text(
-                    text = item.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 10.dp),
-                )
-                Text(
-                    text = Formatting.formatBytes(item.sizeBytes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                        .padding(horizontal = AppDimens.SpaceS),
+                ) {
+                    Text(
+                        text = item.displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = Formatting.formatBytes(item.sizeBytes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
                 IconButton(
                     onClick = { onReorder(index, index - 1) },
                     enabled = index > 0,
@@ -166,7 +170,9 @@ fun OrderedThumbnails(
 @Composable
 private fun Thumb(path: String) {
     val bitmap by produceState<Bitmap?>(initialValue = null, key1 = path) {
-        value = withContext(Dispatchers.IO) { ImageConverter.decodePreview(File(path), 160) }
+        value = withContext(Dispatchers.IO) {
+            runCatching { ImageConverter.decodePreview(File(path), 160) }.getOrNull()
+        }
     }
     Box(
         modifier = Modifier
@@ -177,7 +183,7 @@ private fun Thumb(path: String) {
         contentAlignment = Alignment.Center,
     ) {
         val current = bitmap
-        if (current != null) {
+        if (current != null && !current.isRecycled && current.config != Bitmap.Config.HARDWARE) {
             Image(
                 bitmap = current.asImageBitmap(),
                 contentDescription = null,

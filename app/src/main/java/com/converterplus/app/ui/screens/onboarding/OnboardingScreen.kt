@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +79,7 @@ fun OnboardingScreen(
             onClick = { onFinish(false) },
             modifier = Modifier
                 .align(Alignment.TopEnd)
+                .statusBarsPadding()
                 .padding(AppDimens.SpaceM),
         ) {
             Text(text = stringResource(R.string.action_skip))
@@ -84,8 +88,10 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppDimens.SpaceXl)
-                .padding(top = 96.dp),
+                .padding(top = AppDimens.SpaceXl * 2, bottom = 72.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AnimatedContent(
@@ -115,13 +121,13 @@ fun OnboardingScreen(
                             modifier = Modifier.size(56.dp),
                         )
                     }
-                    Spacer(Modifier.height(28.dp))
+                    Spacer(Modifier.height(AppDimens.SpaceXl))
                     Text(
                         text = stringResource(id = pages[currentPage].titleRes),
                         style = MaterialTheme.typography.headlineMedium,
                         textAlign = TextAlign.Center,
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(AppDimens.SpaceM))
                     Text(
                         text = stringResource(id = pages[currentPage].textRes),
                         style = MaterialTheme.typography.bodyLarge,
@@ -131,7 +137,7 @@ fun OnboardingScreen(
                 }
             }
 
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(AppDimens.SpaceXl))
 
             if (page == pages.lastIndex) {
                 ConsentBlock(

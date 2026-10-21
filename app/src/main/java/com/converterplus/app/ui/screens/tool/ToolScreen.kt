@@ -178,10 +178,14 @@ fun ToolScreen(
     /** «Из галереи» — только картинки. Есть не у всех инструментов (аудио и видео галерея не покажет). */
     fun openGalleryPicker() {
         val imageOnly = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        if (tool == ToolKind.IMAGES_TO_PDF) {
-            pickMultipleImages.launch(imageOnly)
-        } else {
-            pickImage.launch(imageOnly)
+        try {
+            if (tool == ToolKind.IMAGES_TO_PDF) {
+                pickMultipleImages.launch(imageOnly)
+            } else {
+                pickImage.launch(imageOnly)
+            }
+        } catch (e: Exception) {
+            openFilesPicker()
         }
     }
 
@@ -582,6 +586,8 @@ private fun PickZone(onClick: () -> Unit, busy: Boolean, tool: ToolKind) {
             Text(
                 text = stringResource(R.string.tool_pick_file_hint),
                 style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = AppDimens.SpaceL),
             )
             Spacer(Modifier.height(AppDimens.SpaceXs))
             Text(
@@ -591,6 +597,8 @@ private fun PickZone(onClick: () -> Unit, busy: Boolean, tool: ToolKind) {
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = AppDimens.SpaceL),
             )
         }
     }
@@ -611,7 +619,7 @@ private fun RecentsBlock(tool: ToolKind, onPicked: (String) -> Unit) {
                     .clip(MaterialTheme.shapes.small)
                     .background(MaterialTheme.colorScheme.surface)
                     .clickable { onPicked(recent.uri) }
-                    .padding(horizontal = 14.dp, vertical = AppDimens.SpaceM),
+                    .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.SpaceM),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -623,11 +631,13 @@ private fun RecentsBlock(tool: ToolKind, onPicked: (String) -> Unit) {
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp),
                 )
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.size(AppDimens.SpaceM))
                 Text(
                     text = recent.name,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -1207,15 +1217,19 @@ private fun ResultSheetContent(
                 )
             }
             Spacer(Modifier.size(AppDimens.SpaceM))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.tool_result_title),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = stringResource(R.string.tool_result_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

@@ -71,7 +71,7 @@ private data class BottomTab(
 )
 
 private val bottomTabs = listOf(
-    BottomTab(Routes.HOME, R.string.app_name, R.drawable.ic_home),
+    BottomTab(Routes.HOME, R.string.nav_home, R.drawable.ic_home),
     BottomTab(Routes.HISTORY, R.string.history_title, R.drawable.ic_history),
     BottomTab(Routes.SETTINGS, R.string.settings_title, R.drawable.ic_settings),
 )
