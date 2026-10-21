@@ -8,7 +8,6 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
@@ -41,11 +40,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         SettingsStore.init(this)
-        applyNightMode()
+        ThemeController.init(this)
         super.onCreate(savedInstanceState)
 
         UriAccess.init(this)
-        ThemeController.init(this)
         Notifications.ensureChannel(this)
         Ads.refreshAdsAllowed(this)
 
@@ -101,13 +99,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyNightMode() {
-        val mode = when (SettingsStore.themeMode) {
-            ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
-            ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
-            ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-        }
-        if (AppCompatDelegate.getDefaultNightMode() != mode) {
-            AppCompatDelegate.setDefaultNightMode(mode)
-        }
+        ThemeController.applyNightMode(SettingsStore.themeMode)
     }
 }

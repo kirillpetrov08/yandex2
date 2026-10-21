@@ -20,6 +20,7 @@ import com.converterplus.app.data.UriAccess
 import com.converterplus.app.engine.Capabilities
 import com.converterplus.app.engine.ConversionRequest
 import com.converterplus.app.engine.DeviceInfo
+import com.converterplus.app.engine.FileNameFactory
 import com.converterplus.app.engine.FormatOption
 import com.converterplus.app.engine.OutputArtifact
 import com.converterplus.app.engine.PdfPageSize
@@ -384,6 +385,27 @@ class ToolViewModel(
     }
 
     // ------------------------------------------------------------------ результат
+
+    /** Правка имени в шите «Готово!» до сохранения. */
+    fun renameOutput(typed: String) {
+        val result = _state.value.result ?: return
+        if (result.isSaved) return
+        val artifacts = result.artifacts
+        if (artifacts.isEmpty()) return
+        val extension = artifacts.first().name.substringAfterLast('.', result.format)
+        val names = FileNameFactory.namesForUserBase(typed, extension, artifacts.size)
+        _state.update { current ->
+            val currentResult = current.result ?: return@update current
+            if (currentResult.artifacts.size != names.size) return@update current
+            current.copy(
+                result = currentResult.copy(
+                    artifacts = currentResult.artifacts.mapIndexed { index, artifact ->
+                        artifact.copy(name = names[index])
+                    },
+                ),
+            )
+        }
+    }
 
     fun saveResult() {
         val result = _state.value.result ?: return

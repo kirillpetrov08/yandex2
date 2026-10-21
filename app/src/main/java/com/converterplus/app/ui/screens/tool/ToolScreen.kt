@@ -66,7 +66,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -78,6 +81,7 @@ import com.converterplus.app.ads.Ads
 import com.converterplus.app.ads.BannerSlot
 import com.converterplus.app.ads.RewardedOutcome
 import com.converterplus.app.engine.Capabilities
+import com.converterplus.app.engine.FileNameFactory
 import com.converterplus.app.engine.ConversionRequest
 import com.converterplus.app.engine.Formatting
 import com.converterplus.app.engine.OutputArtifact
@@ -374,6 +378,7 @@ fun ToolScreen(
                 result = result,
                 tool = state.tool,
                 withWatermark = state.watermark && Capabilities.supportsWatermark(state.tool),
+                onRename = viewModel::renameOutput,
                 onSave = viewModel::saveResult,
                 onShare = viewModel::shareResult,
                 onOpen = viewModel::openSavedLocation,
@@ -1161,6 +1166,7 @@ private fun ResultSheetContent(
     result: ResultUiState,
     tool: ToolKind,
     withWatermark: Boolean,
+    onRename: (String) -> Unit,
     onSave: () -> Unit,
     onShare: () -> Unit,
     onOpen: () -> Unit,
@@ -1228,10 +1234,36 @@ private fun ResultSheetContent(
                     tool = tool,
                     modifier = Modifier.heightIn(min = 150.dp, max = 240.dp),
                 )
-                FileCaption(
-                    name = first.name,
-                    size = Formatting.formatBytes(first.bytes),
-                )
+                if (result.isSaved) {
+                    FileCaption(
+                        name = first.name,
+                        size = Formatting.formatBytes(first.bytes),
+                    )
+                } else {
+                    val initialBase = FileNameFactory.editableBaseName(first.name, result.artifacts.size)
+                    var draft by remember(result.requestId) {
+                        mutableStateOf(TextFieldValue(initialBase, TextRange(0, initialBase.length)))
+                    }
+                    val extension = first.name.substringAfterLast('.', result.format)
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { value ->
+                            draft = value
+                            onRename(value.text)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.tool_result_filename)) },
+                        supportingText = { Text(stringResource(R.string.tool_result_filename_hint)) },
+                        suffix = { Text(".$extension") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    )
+                    Text(
+                        text = Formatting.formatBytes(first.bytes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (result.artifacts.size > 1) {
                     Text(
                         text = stringResource(R.string.tool_result_files, result.artifacts.size),

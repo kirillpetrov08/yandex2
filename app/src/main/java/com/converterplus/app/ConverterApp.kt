@@ -21,16 +21,14 @@ class ConverterApp : Application(), Configuration.Provider {
         SettingsStore.init(this)
         Notifications.ensureChannel(this)
         CacheCleaner.cleanOldFiles(this)
-        // Реклама инициализируется ТОЛЬКО если согласие уже получено (после онбординга).
-        // На первом запуске согласия нет — SDK не стартует.
-        Ads.initIfConsented(this)
+        Ads.initialize(this)
     }
 
     companion object {
-        /** Согласие получено/изменено — (пере)инициализируем SDK с актуальным значением. */
+        /** Переключатель персонализации: обновляем значение, которое уходит в SDK. */
         fun onConsentChanged(app: Application) {
             ConsentManager.persistConsentTimestamp(app)
-            Ads.initIfConsented(app)
+            Ads.initialize(app)
         }
     }
 }

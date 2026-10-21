@@ -88,4 +88,22 @@ class FileNameFactoryTest {
         assertFalse(name.contains('?'))
         assertTrue(name.endsWith(".jpg"))
     }
+
+    @Test
+    fun `editable base strips extension and page suffix`() {
+        assertEquals("photo", FileNameFactory.editableBaseName("photo.pdf", 1))
+        assertEquals("doc", FileNameFactory.editableBaseName("doc-01.png", 3))
+        assertEquals("report", FileNameFactory.editableBaseName("report-12.jpg", 12))
+    }
+
+    @Test
+    fun `user typed name keeps extension and pages batch`() {
+        assertEquals(listOf("vacation.pdf"), FileNameFactory.namesForUserBase("vacation", "pdf", 1))
+        assertEquals(listOf("vacation.pdf"), FileNameFactory.namesForUserBase("vacation.pdf", "pdf", 1))
+        assertEquals(
+            listOf("vacation-01.png", "vacation-02.png"),
+            FileNameFactory.namesForUserBase("vacation", "png", 2),
+        )
+        assertEquals(listOf("conversion.pdf"), FileNameFactory.namesForUserBase("   ", "pdf", 1))
+    }
 }

@@ -8,10 +8,12 @@ import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import com.converterplus.app.engine.CannotOpenFileException
 import com.converterplus.app.engine.NoInputException
+import com.converterplus.app.engine.OutOfSpaceException
 import com.converterplus.app.engine.OutputArtifact
 import com.converterplus.app.engine.PdfPageSize
 import com.converterplus.app.engine.Watermark
 import com.converterplus.app.engine.image.ImageConverter
+import com.converterplus.app.engine.image.ensureSoftwareArgb
 import kotlinx.coroutines.ensureActive
 import java.io.File
 import java.io.FileOutputStream
@@ -72,7 +74,7 @@ object ImagesToPdf {
                 coroutineContext.ensureActive()
                 if (!input.exists()) throw CannotOpenFileException()
 
-                val bitmap = ImageConverter.decodeScaled(input, maxSide)
+                val bitmap = ensureSoftwareArgb(ImageConverter.decodeScaled(input, maxSide))
                 decoded += bitmap
 
                 val (width, height) = pageDimensions(bitmap, pageSize)
@@ -93,6 +95,9 @@ object ImagesToPdf {
             outputFile.parentFile?.mkdirs()
             FileOutputStream(outputFile).use { stream -> document.writeTo(stream) }
             onProgress(100)
+        } catch (oom: OutOfMemoryError) {
+            runCatching { outputFile.delete() }
+            throw OutOfSpaceException()
         } catch (t: Throwable) {
             // Запись могла оборваться на середине — не оставляем битый файл в кэше.
             runCatching { outputFile.delete() }
@@ -119,6 +124,7 @@ object ImagesToPdf {
     }
 
     private fun drawScaled(canvas: Canvas, bitmap: Bitmap, pageWidth: Int, pageHeight: Int, pageSize: PdfPageSize) {
+        if (bitmap.isRecycled) throw CannotOpenFileException()
         // Белая подложка нужна всегда: прозрачные PNG иначе дают серый фон в просмотрщиках.
         canvas.drawColor(Color.WHITE)
 
