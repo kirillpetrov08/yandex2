@@ -79,11 +79,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         refresh()
     }
 
-    /** Переключатель персонализации меняет согласие, которое уходит в SDK. */
+    /** Переключатель персонализации меняет значение, которое уходит в SDK. Реклама показывается в любом случае. */
     fun setPersonalizedAds(value: Boolean) {
         val app = getApplication<Application>()
         ConsentManager.setPersonalizedAds(app, value)
-        Ads.initIfConsented(app)
+        Ads.initialize(app)
         refresh()
     }
 }

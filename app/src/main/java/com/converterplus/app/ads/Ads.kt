@@ -13,11 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * Единая точка входа в рекламу. Весь SDK Яндекса изолирован в пакете [com.converterplus.app.ads]:
  * остальное приложение знает только про «показать баннер», «показать межстраничную», «показать rewarded».
  *
- * Порядок инициализации строго такой:
- * 1. пользователь дал согласие (третий экран онбординга);
- * 2. [YandexAds.setUserConsent] / [YandexAds.setLocationTracking] / [YandexAds.setAgeRestricted];
- * 3. [YandexAds.initialize].
- * В манифесте AUTOMATIC_SDK_INITIALIZATION=false, поэтому до шага 3 SDK не стартует.
+ * SDK стартует при запуске приложения, без ожидания онбординга.
+ * Переключатель персонализации влияет только на [YandexAds.setUserConsent], не на сам показ.
+ * В манифесте AUTOMATIC_SDK_INITIALIZATION=false, поэтому инициализацию делаем сами в [initialize].
  */
 object Ads {
 
@@ -28,7 +26,7 @@ object Ads {
 
     private val _adsAllowed = MutableStateFlow(true)
 
-    /** Можно ли показывать рекламу сейчас (согласие дано и режим «без рекламы» не активен). */
+    /** Можно ли показывать рекламу сейчас (режим «без рекламы» за rewarded не активен). */
     val adsAllowed: StateFlow<Boolean> = _adsAllowed.asStateFlow()
 
     private var initStarted = false
@@ -45,18 +43,14 @@ object Ads {
 
     /** Обновляет признак «реклама разрешена». Вызывается при смене экрана и после награды. */
     fun refreshAdsAllowed(context: Context) {
-        val allowed = ConsentManager.isConsentGiven(context) && policy(context).isAdsAllowed()
+        val allowed = policy(context).isAdsAllowed()
         if (_adsAllowed.value != allowed) _adsAllowed.value = allowed
     }
 
-    /** Инициализация SDK, если согласие уже получено. Повторные вызовы игнорируются. */
-    fun initIfConsented(app: Application) {
-        if (!ConsentManager.isConsentGiven(app)) {
-            AdsLog.info("init", "пропущено: согласие не получено")
-            _adsAllowed.value = false
-            return
-        }
+    /** Инициализация SDK. Повторные вызовы только обновляют согласие персонализации. */
+    fun initialize(app: Application) {
         if (initStarted) {
+            runCatching { YandexAds.setUserConsent(ConsentManager.userConsentForSdk(app)) }
             refreshAdsAllowed(app)
             return
         }
@@ -92,12 +86,10 @@ object Ads {
         RewardedAdController(units.rewardedUnitId)
     }
 
-    /** Один инстанс контроллера на приложение: объект одноразовый, но создаётся один раз. */
     fun interstitial(): InterstitialAdController = interstitialController
 
     fun rewarded(): RewardedAdController = rewardedController
 
-    /** Предзагрузка межстраничной, если реклама сейчас разрешена. */
     fun maybePreloadInterstitial(context: Context) {
         if (_initialized.value && policy(context).isAdsAllowed()) {
             interstitialController.preload(context)
@@ -108,7 +100,6 @@ object Ads {
         if (_initialized.value) rewardedController.preload(context)
     }
 
-    /** Ширина баннера в dp: вся доступная ширина экрана. */
     fun bannerWidthDp(context: Context): Int {
         val metrics = context.resources.displayMetrics
         return (metrics.widthPixels / metrics.density).toInt().coerceIn(280, 720)

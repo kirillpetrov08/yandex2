@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * Согласие пользователя на обработку данных рекламными сервисами и передача его в SDK.
- * SDK Яндекса инициализируется только после того, как согласие получено (см. [Ads.initIfConsented]).
+ * Персонализация рекламы и отметка, что пользователь видел экран про рекламу.
+ * Показ рекламы от этого не зависит: SDK стартует при запуске приложения.
  */
 object ConsentManager {
 
@@ -41,9 +41,8 @@ object ConsentManager {
     }
 
     /**
-     * Значение согласия, которое уходит в YandexAds.setUserConsent().
-     * Персонализация выключена — передаём false: реклама будет, но неперсонализированная.
+     * Значение, которое уходит в YandexAds.setUserConsent().
+     * Влияет только на персонализацию: реклама показывается в любом случае.
      */
-    fun userConsentForSdk(context: Context): Boolean =
-        isConsentGiven(context) && isPersonalizedAds(context)
+    fun userConsentForSdk(context: Context): Boolean = isPersonalizedAds(context)
 }

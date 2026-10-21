@@ -39,7 +39,7 @@
 
 ```
 app/src/main/java/com/converterplus/app/
-├── ConverterApp.kt              Application: канал уведомлений, инициализация рекламы после согласия
+├── ConverterApp.kt              Application: канал уведомлений, инициализация рекламы при старте
 ├── MainActivity.kt              единственная Activity, portrait, Compose
 ├── Config.kt                    почта поддержки, URL политики, ссылка на магазин
 ├── ads/                         вся реклама изолирована здесь
@@ -47,7 +47,7 @@ app/src/main/java/com/converterplus/app/
 │   ├── AdUnits.kt               ID блоков и testMode из BuildConfig
 │   ├── AdPolicy.kt              частотные ограничения (чистая логика, внедряемые часы)
 │   ├── AdLoadState.kt, AdsLog.kt
-│   ├── ConsentManager.kt        согласие и передача его в SDK
+│   ├── ConsentManager.kt        персонализация и передача её в SDK
 │   ├── BannerSlot.kt            Compose-обёртка BannerAdView
 │   ├── InterstitialAdController.kt, RewardedAdController.kt
 ├── engine/
@@ -78,8 +78,9 @@ app/src/main/java/com/converterplus/app/
 
 ## Реклама
 
-- SDK инициализируется **только после согласия** (третий экран онбординга);
-  в манифесте `AUTOMATIC_SDK_INITIALIZATION=false`.
+- SDK инициализируется **при запуске приложения**, без ожидания онбординга;
+  в манифесте `AUTOMATIC_SDK_INITIALIZATION=false`. Переключатель персонализации
+  влияет только на `YandexAds.setUserConsent()`, не на сам показ.
 - Частотные ограничения — в `AdPolicy`: межстраничная не чаще каждой 3-й конвертации
   и не раньше 120 секунд с прошлого показа; «без рекламы» — 30 минут за rewarded.
   Метки времени — nullable, сентинелов `0L` нет, часы внедряются (`Clock`).

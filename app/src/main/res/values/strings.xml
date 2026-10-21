@@ -33,7 +33,7 @@
     <string name="onboarding_title_3">Быстро, красиво и бесплатно</string>
     <string name="onboarding_text_3">Три нажатия — и файл готов. Приложение бесплатное, его поддерживает реклама.</string>
     <string name="onboarding_consent_title">Реклама и данные</string>
-    <string name="onboarding_consent_text">Реклама помогает приложению оставаться бесплатным. Если включить персонализацию, объявления будут подбираться по данным рекламных сервисов Яндекса. Ваши файлы никуда не отправляются.</string>
+    <string name="onboarding_consent_text">Приложение бесплатное, его поддерживает реклама Яндекса. Она показывается всегда. Если включить персонализацию, объявления будут подбираться точнее. Ваши файлы никуда не отправляются.</string>
     <string name="onboarding_consent_switch">Персонализированная реклама</string>
     <string name="onboarding_privacy_link">Политика конфиденциальности</string>
     <string name="onboarding_finish">Принять и продолжить</string>
