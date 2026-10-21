@@ -156,7 +156,7 @@ object ImageConverter {
             decodeSampled(file, maxSide)
         } ?: throw CannotOpenFileException()
 
-        return applyExifOrientation(file, decoded)
+        return applyExifOrientation(file, ensureSoftwareArgb(decoded))
     }
 
     /** Уменьшенное превью для интерфейса: не грузим полноразмерный битмап. */
@@ -170,23 +170,33 @@ object ImageConverter {
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
-    private fun decodeWithImageDecoder(file: File, maxSide: Int = 0): Bitmap? = try {
+    private fun decodeWithImageDecoder(file: File, maxSide: Int = 0): Bitmap? {
         val source = ImageDecoder.createSource(file)
-        ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-            // Без premultiplied alpha цвета полупрозрачных пикселей не «съедаются» при перекодировании.
-            decoder.setUnpremultipliedRequired(true)
-            // По умолчанию декодер может вернуть HARDWARE-битмап: его нельзя ни рисовать
-            // на обычном canvas, ни копировать в ARGB_8888. Просим софтверную память явно.
-            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-            if (maxSide > 0) {
-                val sample = sampleSize(info.size.width, info.size.height, maxSide)
-                if (sample > 1) {
-                    decoder.setTargetSampleSize(sample)
+        fun decode(unpremultiplied: Boolean): Bitmap =
+            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                if (unpremultiplied) {
+                    // Без premultiplied alpha цвета полупрозрачных пикселей не «съедаются».
+                    decoder.setUnpremultipliedRequired(true)
+                }
+                // По умолчанию декодер может вернуть HARDWARE-битмап: его нельзя ни рисовать
+                // на обычном canvas, ни копировать в ARGB_8888. Просим софтверную память явно.
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                if (maxSide > 0) {
+                    val sample = sampleSize(info.size.width, info.size.height, maxSide)
+                    if (sample > 1) {
+                        decoder.setTargetSampleSize(sample)
+                    }
                 }
             }
+        return try {
+            ensureSoftwareArgb(decode(unpremultiplied = true))
+        } catch (e: Exception) {
+            try {
+                ensureSoftwareArgb(decode(unpremultiplied = false))
+            } catch (ignored: Exception) {
+                null
+            }
         }
-    } catch (e: IOException) {
-        null
     }
 
     private fun decodeSampled(file: File, maxSide: Int = 0): Bitmap? {
@@ -273,4 +283,16 @@ object ImageConverter {
         QualityPreset.BALANCED -> 85
         QualityPreset.MIN_SIZE -> 60
     }
+}
+
+/**
+ * PdfDocument и Canvas падают на HARDWARE-битмапе. Копируем в обычную ARGB_8888.
+ */
+internal fun ensureSoftwareArgb(bitmap: Bitmap): Bitmap {
+    if (bitmap.isRecycled) throw CannotOpenFileException()
+    val hardware = bitmap.config == Bitmap.Config.HARDWARE
+    if (!hardware && bitmap.config == Bitmap.Config.ARGB_8888) return bitmap
+    val copy = bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: throw CannotOpenFileException()
+    if (copy !== bitmap) bitmap.recycle()
+    return copy
 }

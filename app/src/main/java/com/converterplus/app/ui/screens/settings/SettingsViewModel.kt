@@ -7,6 +7,7 @@ import com.converterplus.app.ads.Ads
 import com.converterplus.app.ads.ConsentManager
 import com.converterplus.app.data.SettingsStore
 import com.converterplus.app.data.ThemeMode
+import com.converterplus.app.ui.theme.ThemeController
 import com.converterplus.app.engine.QualityPreset
 import com.converterplus.app.engine.ocr.TessdataStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,7 +56,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setTheme(mode: ThemeMode) {
-        SettingsStore.themeMode = mode
+        ThemeController.set(mode)
         refresh()
     }
 

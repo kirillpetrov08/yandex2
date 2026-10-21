@@ -61,13 +61,15 @@ fun FilePreview(
 
     val bitmap by produceState<Bitmap?>(initialValue = null, key1 = file.localPath, key2 = kind) {
         value = withContext(Dispatchers.IO) {
-            val source = File(file.localPath)
-            when (kind) {
-                PreviewKind.IMAGE -> ImageConverter.decodePreview(source, PREVIEW_SIDE)
-                PreviewKind.PDF -> PdfToImages.renderFirstPage(source, PREVIEW_SIDE)
-                PreviewKind.VIDEO -> MediaProbe.firstFrame(source, PREVIEW_SIDE)
-                else -> null
-            }
+            runCatching {
+                val source = File(file.localPath)
+                when (kind) {
+                    PreviewKind.IMAGE -> ImageConverter.decodePreview(source, PREVIEW_SIDE)
+                    PreviewKind.PDF -> PdfToImages.renderFirstPage(source, PREVIEW_SIDE)
+                    PreviewKind.VIDEO -> MediaProbe.firstFrame(source, PREVIEW_SIDE)
+                    else -> null
+                }
+            }.getOrNull()
         }
     }
 

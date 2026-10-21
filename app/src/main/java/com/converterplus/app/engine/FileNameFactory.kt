@@ -63,4 +63,26 @@ object FileNameFactory {
             "$base-$number.$ext"
         }
     }
+
+    /**
+     * Основа имени в поле «Готово!»: для одного файла — без расширения,
+     * для пачки — без суффикса «-01», чтобы правка не плодила «doc-01-01».
+     */
+    fun editableBaseName(fileName: String, count: Int): String {
+        val base = sanitizeBaseName(baseNameWithoutExtension(fileName))
+        if (count <= 1) return base
+        return base.replace(Regex("-\\d+$"), "").ifBlank { base }
+    }
+
+    /** Имена после правки пользователем: одно «vacation.pdf» или пачка «vacation-01.png». */
+    fun namesForUserBase(typedBase: String, extension: String, count: Int): List<String> {
+        val safeCount = count.coerceAtLeast(1)
+        val base = sanitizeBaseName(baseNameWithoutExtension(typedBase.ifBlank { FALLBACK_BASE }))
+        val ext = extension.trimStart('.').lowercase()
+        return if (safeCount == 1) {
+            listOf(withExtension(base, ext))
+        } else {
+            pagedNames(base, ext, (1..safeCount).toList())
+        }
+    }
 }

@@ -101,6 +101,8 @@
     <string name="tool_converting_slow">Это может занять немного времени…</string>
     <string name="tool_result_title">Готово!</string>
     <string name="tool_result_subtitle">Файл готов — сохраните его или поделитесь</string>
+    <string name="tool_result_filename">Имя файла</string>
+    <string name="tool_result_filename_hint">Можно изменить до сохранения</string>
     <string name="tool_result_grew">Файл стал больше</string>
     <string name="tool_result_text_preview">Начало текста</string>
     <string name="tool_result_before">Было</string>
