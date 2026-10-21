@@ -39,6 +39,7 @@
     <string name="onboarding_finish">Принять и продолжить</string>
 
     <!-- ============ Главная ============ -->
+    <string name="nav_home">Главная</string>
     <string name="home_quick_start">Быстрый старт</string>
     <string name="home_all_tools">Все инструменты</string>
 
@@ -240,6 +241,7 @@
     <string name="settings_haptics">Вибрация при успехе</string>
 
     <string name="settings_remove_ads">Убрать рекламу</string>
+    <string name="settings_ads_free_minutes">%1$d мин</string>
     <string name="settings_personalized">Персонализированная реклама</string>
     <string name="settings_version">Версия %1$s</string>
     <string name="settings_privacy">Политика конфиденциальности</string>

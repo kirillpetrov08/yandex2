@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
@@ -76,14 +77,17 @@ fun ToolCard(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = AppDimens.CardElevation),
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(accent.copy(alpha = 0.85f)),
+                )
                 Row(
+                    modifier = Modifier.padding(AppDimens.CardPadding),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
                 ) {
                     Box(
                         modifier = Modifier
@@ -96,7 +100,7 @@ fun ToolCard(
                             painter = painterResource(id = iconRes),
                             contentDescription = stringResource(R.string.cd_tool_icon),
                             tint = accent,
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(AppDimens.IconXLarge),
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
@@ -113,10 +117,10 @@ fun ToolCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        if (!available) {
+                            SoonBadge()
+                        }
                     }
-                }
-                if (!available) {
-                    SoonBadge()
                 }
             }
         }
@@ -144,6 +148,7 @@ fun SoonBadge(modifier: Modifier = Modifier) {
 fun QuickStartCard(
     title: String,
     subtitle: String,
+    iconRes: Int,
     gradient: List<Color>,
     index: Int,
     onClick: () -> Unit,
@@ -164,28 +169,38 @@ fun QuickStartCard(
     ) {
         Box(
             modifier = Modifier
-                .size(width = 168.dp, height = 108.dp)
+                .size(width = 176.dp, height = 112.dp)
                 .pressable(interaction)
                 .clip(MaterialTheme.shapes.large)
                 .background(Brush.linearGradient(gradient))
                 .clickable(interactionSource = interaction, indication = null) { onClick() }
-                .padding(14.dp),
+                .padding(AppDimens.CardPadding),
         ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.28f),
+                modifier = Modifier
+                    .size(48.dp)
+                    .align(Alignment.TopEnd),
+            )
             Column(
                 modifier = Modifier.align(Alignment.BottomStart),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceXs),
             ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

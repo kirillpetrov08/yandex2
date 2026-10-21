@@ -27,11 +27,11 @@ private val LightColors = lightColorScheme(
 
 private val DarkColors = darkColorScheme(
     primary = AccentBlue,
-    onPrimary = SurfaceDark,
+    onPrimary = SurfaceLight,
     primaryContainer = AccentBlue,
-    onPrimaryContainer = TextPrimaryDark,
+    onPrimaryContainer = SurfaceLight,
     secondary = AccentTeal,
-    onSecondary = BackgroundDark,
+    onSecondary = SurfaceLight,
     tertiary = AccentAmber,
     background = BackgroundDark,
     onBackground = TextPrimaryDark,

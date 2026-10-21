@@ -4,21 +4,27 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.converterplus.app.R
@@ -45,17 +51,39 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(bottom = AppDimens.BannerSafeGap),
     ) {
-        Column(modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding)) {
-            Spacer(Modifier.height(AppDimens.SpaceM))
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = stringResource(R.string.app_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Spacer(Modifier.height(AppDimens.SpaceM))
+        Row(
+            modifier = Modifier.padding(horizontal = AppDimens.ScreenPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(AppDimens.ButtonMedium)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_tool_image),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(AppDimens.IconXLarge),
+                )
+            }
+            Spacer(Modifier.width(AppDimens.SpaceM))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineMedium,
+                    maxLines = 1,
+                )
+                Text(
+                    text = stringResource(R.string.app_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
         }
 
         Spacer(Modifier.height(AppDimens.BlockGap))
@@ -71,6 +99,7 @@ fun HomeScreen(
                 QuickStartCard(
                     title = stringResource(id = tool.titleRes),
                     subtitle = stringResource(id = tool.subtitleRes),
+                    iconRes = tool.iconRes,
                     gradient = QuickStartGradients[index % QuickStartGradients.size],
                     index = index,
                     onClick = { onOpenTool(tool.kind) },
@@ -95,7 +124,10 @@ private fun ToolsGrid(onOpenTool: (ToolKind) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
     ) {
         ToolCatalog.all.chunked(2).forEachIndexed { rowIndex, row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceM)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceM),
+            ) {
                 row.forEachIndexed { columnIndex, tool ->
                     ToolCard(
                         title = stringResource(id = tool.titleRes),

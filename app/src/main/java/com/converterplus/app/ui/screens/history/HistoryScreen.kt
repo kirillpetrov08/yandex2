@@ -138,7 +138,10 @@ fun HistoryScreen(
                 FlowRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.ScreenPadding),
+                        .padding(
+                            horizontal = AppDimens.ScreenPadding,
+                            vertical = AppDimens.SpaceS,
+                        ),
                     horizontalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.SpaceS),
                 ) {
@@ -338,7 +341,11 @@ private fun HistoryCard(
                     onClick = onSave,
                     modifier = Modifier.height(AppDimens.MinTouchTarget),
                 ) {
-                    Text(stringResource(R.string.action_save), maxLines = 1)
+                    Text(
+                        text = stringResource(R.string.action_save),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }

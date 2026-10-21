@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.converterplus.app.Config
@@ -159,7 +160,10 @@ fun SettingsScreen(
             ClickableRow(
                 title = stringResource(R.string.settings_remove_ads),
                 subtitle = if (state.adsFreeMinutesLeft > 0) {
-                    stringResource(R.string.remove_ads_active, formatMinutes(state.adsFreeMinutesLeft))
+                    stringResource(
+                        R.string.remove_ads_active,
+                        stringResource(R.string.settings_ads_free_minutes, state.adsFreeMinutesLeft),
+                    )
                 } else {
                     stringResource(R.string.remove_ads_text)
                 },
@@ -192,8 +196,6 @@ fun SettingsScreen(
     }
 }
 
-private fun formatMinutes(minutes: Int): String = "$minutes мин"
-
 @Composable
 private fun Section(text: String, content: @Composable () -> Unit) {
     Column {
@@ -218,12 +220,19 @@ private fun ClickableRow(title: String, subtitle: String, onClick: () -> Unit) {
             .clickable { onClick() }
             .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.RowPadding),
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
         if (subtitle.isNotBlank()) {
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -237,12 +246,19 @@ private fun InfoRow(title: String, subtitle: String) {
             .fillMaxWidth()
             .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.RowPadding),
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
         if (subtitle.isNotBlank()) {
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -254,13 +270,16 @@ private fun ToggleRow(title: String, checked: Boolean, onChange: (Boolean) -> Un
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.CardPadding, vertical = AppDimens.SpaceS),
+            .height(AppDimens.MinTouchTarget)
+            .padding(horizontal = AppDimens.CardPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(AppDimens.SpaceM))

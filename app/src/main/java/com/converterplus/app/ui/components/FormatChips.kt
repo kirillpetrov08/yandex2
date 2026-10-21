@@ -1,8 +1,7 @@
 package com.converterplus.app.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,12 +17,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,7 +30,7 @@ import com.converterplus.app.ui.theme.AppDimens
 
 /**
  * Ряд кнопок форматов результата.
- * Выбранный формат подсвечен акцентом и увеличен до 1.05.
+ * Выбранный формат подсвечен акцентом.
  * Недоступный формат неактивен и при нажатии показывает причину.
  *
  * Чипы переносятся на следующую строку, а не сжимаются: в узкой колонке текст иначе
@@ -121,11 +118,6 @@ private fun FormatChip(
     onSelect: (String) -> Unit,
     onDisabledClick: (Int) -> Unit,
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.05f else 1f,
-        animationSpec = spring(),
-        label = "chipScale",
-    )
     val container = when {
         !option.enabled -> MaterialTheme.colorScheme.surfaceVariant
         selected -> MaterialTheme.colorScheme.primary
@@ -136,15 +128,17 @@ private fun FormatChip(
         selected -> MaterialTheme.colorScheme.onPrimary
         else -> MaterialTheme.colorScheme.onSurface
     }
+    val outline = if (selected || !option.enabled) {
+        Color.Transparent
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
 
     Box(
         modifier = Modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
             .clip(MaterialTheme.shapes.small)
             .background(container)
+            .border(1.dp, outline, MaterialTheme.shapes.small)
             .clickable {
                 if (option.enabled) {
                     onSelect(option.id)

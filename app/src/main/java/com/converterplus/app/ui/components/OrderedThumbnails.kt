@@ -112,20 +112,24 @@ fun OrderedThumbnails(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Thumb(path = item.localPath)
-                Text(
-                    text = item.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 10.dp),
-                )
-                Text(
-                    text = Formatting.formatBytes(item.sizeBytes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                        .padding(horizontal = AppDimens.SpaceS),
+                ) {
+                    Text(
+                        text = item.displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = Formatting.formatBytes(item.sizeBytes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
                 IconButton(
                     onClick = { onReorder(index, index - 1) },
                     enabled = index > 0,

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -84,13 +85,15 @@ fun EmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = AppDimens.SpaceL),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = AppDimens.SpaceL, horizontal = AppDimens.SpaceL),
         )
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = AppDimens.StatGap, horizontal = AppDimens.SpaceL),
         )
     }
 }
