@@ -146,8 +146,7 @@ object ImageConverter {
     fun decodeScaled(file: File, maxSide: Int): Bitmap {
         if (!file.exists() || file.length() == 0L) throw CannotOpenFileException()
 
-        val extension = file.name.substringAfterLast('.', "").lowercase()
-        val needsImageDecoder = (extension == "heic" || extension == "heif" || extension == "avif") &&
+        val needsImageDecoder = looksLikeHeifOrAvif(file) &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
         val decoded = if (needsImageDecoder) {
@@ -163,8 +162,14 @@ object ImageConverter {
     fun decodePreview(file: File, maxSide: Int): Bitmap? {
         if (!file.exists()) return null
         return try {
-            decodeScaled(file, maxSide)
-        } catch (e: Exception) {
+            val bitmap = decodeScaled(file, maxSide)
+            if (bitmap.isRecycled || bitmap.config == Bitmap.Config.HARDWARE) {
+                runCatching { bitmap.recycle() }
+                null
+            } else {
+                bitmap
+            }
+        } catch (t: Throwable) {
             null
         }
     }
@@ -204,13 +209,42 @@ object ImageConverter {
             // Всегда ARGB_8888: декодер сам решает иначе (RGB_565 для JPEG), а такой битмап
             // нельзя использовать как основу для canvas — рисование на нём падает.
             inPreferredConfig = Bitmap.Config.ARGB_8888
+            inDither = false
         }
         if (maxSide > 0) {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(file.absolutePath, bounds)
+            // Неизвестный контейнер (часто HEIC с именем .jpg): outWidth=-1, sample=1, нативный краш.
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
             options.inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, maxSide)
         }
         return BitmapFactory.decodeFile(file.absolutePath, options)
+    }
+
+    /**
+     * HEIC из галереи часто приходит как IMG_1234.jpg: расширение врёт, BitmapFactory падает нативно.
+     * Смотрим и имя, и бренд ISO BMFF (`ftyp`).
+     */
+    private fun looksLikeHeifOrAvif(file: File): Boolean {
+        val extension = file.name.substringAfterLast('.', "").lowercase()
+        if (extension in setOf("heic", "heif", "heics", "hif", "avif", "avifs")) return true
+        return try {
+            file.inputStream().use { input ->
+                val header = ByteArray(12)
+                if (input.read(header) < 12) return false
+                if (header[4] != 'f'.code.toByte() ||
+                    header[5] != 't'.code.toByte() ||
+                    header[6] != 'y'.code.toByte() ||
+                    header[7] != 'p'.code.toByte()
+                ) {
+                    return false
+                }
+                val brand = String(header, 8, 4, Charsets.US_ASCII)
+                brand in setOf("heic", "heif", "mif1", "msf1", "heim", "heis", "avif", "avis")
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun sampleSize(width: Int, height: Int, maxSide: Int): Int {
@@ -290,8 +324,12 @@ object ImageConverter {
  */
 internal fun ensureSoftwareArgb(bitmap: Bitmap): Bitmap {
     if (bitmap.isRecycled) throw CannotOpenFileException()
-    val hardware = bitmap.config == Bitmap.Config.HARDWARE
-    if (!hardware && bitmap.config == Bitmap.Config.ARGB_8888) return bitmap
+    // copy()/Canvas.drawBitmap с HARDWARE на части прошивок даёт SIGSEGV — не трогаем такой кадр.
+    if (bitmap.config == Bitmap.Config.HARDWARE) {
+        runCatching { bitmap.recycle() }
+        throw CannotOpenFileException()
+    }
+    if (bitmap.config == Bitmap.Config.ARGB_8888) return bitmap
     val copy = bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: throw CannotOpenFileException()
     if (copy !== bitmap) bitmap.recycle()
     return copy

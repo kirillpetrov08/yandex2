@@ -178,10 +178,14 @@ fun ToolScreen(
     /** «Из галереи» — только картинки. Есть не у всех инструментов (аудио и видео галерея не покажет). */
     fun openGalleryPicker() {
         val imageOnly = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-        if (tool == ToolKind.IMAGES_TO_PDF) {
-            pickMultipleImages.launch(imageOnly)
-        } else {
-            pickImage.launch(imageOnly)
+        try {
+            if (tool == ToolKind.IMAGES_TO_PDF) {
+                pickMultipleImages.launch(imageOnly)
+            } else {
+                pickImage.launch(imageOnly)
+            }
+        } catch (e: Exception) {
+            openFilesPicker()
         }
     }
 

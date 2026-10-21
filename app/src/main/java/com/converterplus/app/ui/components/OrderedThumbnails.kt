@@ -166,7 +166,9 @@ fun OrderedThumbnails(
 @Composable
 private fun Thumb(path: String) {
     val bitmap by produceState<Bitmap?>(initialValue = null, key1 = path) {
-        value = withContext(Dispatchers.IO) { ImageConverter.decodePreview(File(path), 160) }
+        value = withContext(Dispatchers.IO) {
+            runCatching { ImageConverter.decodePreview(File(path), 160) }.getOrNull()
+        }
     }
     Box(
         modifier = Modifier
@@ -177,7 +179,7 @@ private fun Thumb(path: String) {
         contentAlignment = Alignment.Center,
     ) {
         val current = bitmap
-        if (current != null) {
+        if (current != null && !current.isRecycled && current.config != Bitmap.Config.HARDWARE) {
             Image(
                 bitmap = current.asImageBitmap(),
                 contentDescription = null,
