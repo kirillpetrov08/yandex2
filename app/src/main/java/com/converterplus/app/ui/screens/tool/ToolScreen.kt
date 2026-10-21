@@ -175,6 +175,11 @@ fun ToolScreen(
         }
     }
 
+    /** «Из файлов» — системный выбор документов с нужными типами. */
+    fun openFilesPicker() {
+        openDocument.launch(Capabilities.mimeTypesFor(tool))
+    }
+
     /** «Из галереи» — только картинки. Есть не у всех инструментов (аудио и видео галерея не покажет). */
     fun openGalleryPicker() {
         val imageOnly = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -187,11 +192,6 @@ fun ToolScreen(
         } catch (e: Exception) {
             openFilesPicker()
         }
-    }
-
-    /** «Из файлов» — системный выбор документов с нужными типами. */
-    fun openFilesPicker() {
-        openDocument.launch(Capabilities.mimeTypesFor(tool))
     }
 
     /** Основное действие зоны выбора: сначала пробуем галерею, если она уместна. */

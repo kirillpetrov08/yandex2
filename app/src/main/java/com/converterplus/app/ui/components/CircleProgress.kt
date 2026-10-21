@@ -86,14 +86,18 @@ fun EmptyState(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = AppDimens.SpaceL, horizontal = AppDimens.SpaceL),
+            modifier = Modifier
+                .padding(horizontal = AppDimens.SpaceL)
+                .padding(top = AppDimens.SpaceL),
         )
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = AppDimens.StatGap, horizontal = AppDimens.SpaceL),
+            modifier = Modifier
+                .padding(horizontal = AppDimens.SpaceL)
+                .padding(top = AppDimens.StatGap),
         )
     }
 }
