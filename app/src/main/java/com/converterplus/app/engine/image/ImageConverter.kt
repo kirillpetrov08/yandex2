@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorSpace
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -158,6 +159,21 @@ object ImageConverter {
         return applyExifOrientation(file, ensureSoftwareArgb(decoded))
     }
 
+    /**
+     * Декод специально для PDF: software ARGB_8888 в sRGB.
+     * Камерные DISPLAY_P3 / HARDWARE / unpremultiplied при прямой отрисовке на
+     * [android.graphics.pdf.PdfDocument] дают нативный краш — здесь это снимается копией.
+     */
+    fun decodeForPdf(file: File, maxSide: Int): Bitmap {
+        val decoded = decodeScaled(file, maxSide)
+        return try {
+            copyToSrgb8888(decoded)
+        } catch (t: Throwable) {
+            runCatching { if (!decoded.isRecycled) decoded.recycle() }
+            throw if (t is CannotOpenFileException) t else CannotOpenFileException(t)
+        }
+    }
+
     /** Уменьшенное превью для интерфейса: не грузим полноразмерный битмап. */
     fun decodePreview(file: File, maxSide: Int): Bitmap? {
         if (!file.exists()) return null
@@ -177,15 +193,11 @@ object ImageConverter {
     @RequiresApi(Build.VERSION_CODES.P)
     private fun decodeWithImageDecoder(file: File, maxSide: Int = 0): Bitmap? {
         val source = ImageDecoder.createSource(file)
-        fun decode(unpremultiplied: Boolean): Bitmap =
+        return try {
             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                if (unpremultiplied) {
-                    // Без premultiplied alpha цвета полупрозрачных пикселей не «съедаются».
-                    decoder.setUnpremultipliedRequired(true)
-                }
-                // По умолчанию декодер может вернуть HARDWARE-битмап: его нельзя ни рисовать
-                // на обычном canvas, ни копировать в ARGB_8888. Просим софтверную память явно.
+                // Unpremultiplied + PdfDocument = SIGSEGV на части прошивок — не включаем.
                 decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
                 if (maxSide > 0) {
                     val sample = sampleSize(info.size.width, info.size.height, maxSide)
                     if (sample > 1) {
@@ -193,32 +205,29 @@ object ImageConverter {
                     }
                 }
             }
-        return try {
-            ensureSoftwareArgb(decode(unpremultiplied = true))
         } catch (e: Exception) {
-            try {
-                ensureSoftwareArgb(decode(unpremultiplied = false))
-            } catch (ignored: Exception) {
-                null
-            }
+            null
         }
     }
 
     private fun decodeSampled(file: File, maxSide: Int = 0): Bitmap? {
         val options = BitmapFactory.Options().apply {
-            // Всегда ARGB_8888: декодер сам решает иначе (RGB_565 для JPEG), а такой битмап
-            // нельзя использовать как основу для canvas — рисование на нём падает.
             inPreferredConfig = Bitmap.Config.ARGB_8888
             inDither = false
+            inScaled = false
+            inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
         }
         if (maxSide > 0) {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(file.absolutePath, bounds)
-            // Неизвестный контейнер (часто HEIC с именем .jpg): outWidth=-1, sample=1, нативный краш.
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
             options.inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, maxSide)
         }
-        return BitmapFactory.decodeFile(file.absolutePath, options)
+        return try {
+            BitmapFactory.decodeFile(file.absolutePath, options)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**
@@ -332,5 +341,31 @@ internal fun ensureSoftwareArgb(bitmap: Bitmap): Bitmap {
     if (bitmap.config == Bitmap.Config.ARGB_8888) return bitmap
     val copy = bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: throw CannotOpenFileException()
     if (copy !== bitmap) bitmap.recycle()
+    return copy
+}
+
+/**
+ * Копия в обычную sRGB ARGB_8888. PdfDocument падает на DISPLAY_P3 и HARDWARE.
+ * Исходник освобождается, если создана новая копия.
+ */
+internal fun copyToSrgb8888(source: Bitmap): Bitmap {
+    if (source.isRecycled) throw CannotOpenFileException()
+    if (source.config == Bitmap.Config.HARDWARE) {
+        runCatching { source.recycle() }
+        throw CannotOpenFileException()
+    }
+    val srgb = ColorSpace.get(ColorSpace.Named.SRGB)
+    val alreadySrgb = source.config == Bitmap.Config.ARGB_8888 &&
+        (source.colorSpace == null || source.colorSpace == srgb)
+    if (alreadySrgb) return source
+    val copy = Bitmap.createBitmap(
+        source.width.coerceAtLeast(1),
+        source.height.coerceAtLeast(1),
+        Bitmap.Config.ARGB_8888,
+        true,
+        srgb,
+    )
+    Canvas(copy).drawBitmap(source, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
+    source.recycle()
     return copy
 }
