@@ -5,7 +5,6 @@ import com.converterplus.app.R
 import com.converterplus.app.engine.audio.AudioConverter
 import com.converterplus.app.engine.image.ImageConverter
 import com.converterplus.app.engine.ocr.OcrConverter
-import com.converterplus.app.engine.pdf.ImagesToPdf
 import com.converterplus.app.engine.pdf.PdfToImages
 import com.converterplus.app.engine.video.VideoConverter
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +42,7 @@ class ConversionEngine(private val context: Context) {
         val artifacts = when (request.tool) {
             ToolKind.IMAGES -> convertImages(request, outputDir, watermarkText, onProgress)
             ToolKind.PDF_TO_IMAGES -> convertPdf(request, outputDir, watermarkText, onProgress)
-            ToolKind.IMAGES_TO_PDF -> convertToPdf(request, outputDir, watermarkText, onProgress)
+            ToolKind.IMAGES_TO_PDF -> throw UnsupportedToolException(request.tool)
             ToolKind.AUDIO -> convertAudio(request, outputDir, onProgress)
             ToolKind.VIDEO -> convertVideo(request, outputDir, onProgress)
             ToolKind.OCR -> convertOcr(request, outputDir, onProgress)
@@ -104,25 +103,6 @@ class ConversionEngine(private val context: Context) {
             watermarkText = watermarkText,
             onProgress = onProgress,
         )
-    }
-
-    private suspend fun convertToPdf(
-        request: ConversionRequest,
-        outputDir: File,
-        watermarkText: String?,
-        onProgress: (Int) -> Unit,
-    ): List<OutputArtifact> {
-        val first = request.inputs.first()
-        val name = FileNameFactory.outputName(first.displayName, Formats.PDF, emptySet())
-        val target = File(outputDir, name)
-        val artifact = ImagesToPdf.convert(
-            inputs = request.inputs.map { File(it.localPath) },
-            outputFile = target,
-            pageSize = request.pdfPageSize,
-            watermarkText = watermarkText,
-            onProgress = onProgress,
-        )
-        return listOf(artifact)
     }
 
     private suspend fun convertAudio(

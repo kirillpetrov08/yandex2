@@ -47,8 +47,6 @@
     <string name="tool_images_subtitle">JPG, PNG, WEBP</string>
     <string name="tool_pdf_to_images_title">PDF → Фото</string>
     <string name="tool_pdf_to_images_subtitle">Страницы PDF в картинки</string>
-    <string name="tool_images_to_pdf_title">Фото → PDF</string>
-    <string name="tool_images_to_pdf_subtitle">Картинки в один PDF</string>
     <string name="tool_ocr_title">Извлечение текста</string>
     <string name="tool_ocr_subtitle">Текст из картинки и PDF</string>
     <string name="tool_audio_title">Аудио</string>

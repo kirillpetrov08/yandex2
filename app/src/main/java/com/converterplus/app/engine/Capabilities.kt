@@ -84,7 +84,6 @@ object Capabilities {
     val AVAILABLE_TOOLS: Set<ToolKind> = setOf(
         ToolKind.IMAGES,
         ToolKind.PDF_TO_IMAGES,
-        ToolKind.IMAGES_TO_PDF,
         ToolKind.OCR,
         ToolKind.AUDIO,
         ToolKind.VIDEO,
@@ -296,7 +295,6 @@ object Capabilities {
     fun supportsWatermark(tool: ToolKind): Boolean = tool in setOf(
         ToolKind.IMAGES,
         ToolKind.PDF_TO_IMAGES,
-        ToolKind.IMAGES_TO_PDF,
     )
 
     /** У инструмента есть выбор страниц PDF. */
@@ -322,12 +320,11 @@ object Capabilities {
     /** У инструмента есть смысл в выборе «Из галереи» (в галерее только картинки). */
     fun hasGallerySource(tool: ToolKind): Boolean = tool in setOf(
         ToolKind.IMAGES,
-        ToolKind.IMAGES_TO_PDF,
         ToolKind.OCR,
     )
 
-    /** Инструмент умеет работать с несколькими файлами сразу. */
-    fun supportsMultipleFiles(tool: ToolKind): Boolean = tool == ToolKind.IMAGES_TO_PDF
+    /** Несколько файлов сразу больше не принимаем: «Фото → PDF» снят. */
+    fun supportsMultipleFiles(tool: ToolKind): Boolean = false
 
     const val MAX_FILES_PER_CONVERSION = 30
 }

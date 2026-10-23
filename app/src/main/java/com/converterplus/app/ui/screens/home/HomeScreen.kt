@@ -116,7 +116,7 @@ fun HomeScreen(
     }
 }
 
-/** Сетка 2×3: ряды по две карточки. */
+/** Сетка: ряды по две карточки. */
 @Composable
 private fun ToolsGrid(onOpenTool: (ToolKind) -> Unit) {
     Column(

@@ -6,7 +6,6 @@ import com.converterplus.app.engine.Capabilities
 import com.converterplus.app.engine.ToolKind
 import com.converterplus.app.ui.theme.AccentAmber
 import com.converterplus.app.ui.theme.AccentBlue
-import com.converterplus.app.ui.theme.AccentCoral
 import com.converterplus.app.ui.theme.AccentTeal
 
 /** Описание инструмента для главного экрана. */
@@ -21,7 +20,7 @@ data class ToolDef(
 }
 
 /**
- * Каталог инструментов: лента «Быстрый старт» (первые три) и сетка 2×3 со всеми.
+ * Каталог инструментов: лента «Быстрый старт» (первые три) и сетка со всеми.
  * Недоступные инструменты не прячутся, а помечаются «Скоро» (см. [Capabilities]).
  */
 object ToolCatalog {
@@ -29,7 +28,6 @@ object ToolCatalog {
     val all: List<ToolDef> = listOf(
         ToolDef(ToolKind.IMAGES, R.string.tool_images_title, R.string.tool_images_subtitle, R.drawable.ic_tool_image, AccentBlue),
         ToolDef(ToolKind.PDF_TO_IMAGES, R.string.tool_pdf_to_images_title, R.string.tool_pdf_to_images_subtitle, R.drawable.ic_tool_pdf, AccentTeal),
-        ToolDef(ToolKind.IMAGES_TO_PDF, R.string.tool_images_to_pdf_title, R.string.tool_images_to_pdf_subtitle, R.drawable.ic_tool_images_to_pdf, AccentCoral),
         ToolDef(ToolKind.OCR, R.string.tool_ocr_title, R.string.tool_ocr_subtitle, R.drawable.ic_tool_ocr, AccentAmber),
         ToolDef(ToolKind.AUDIO, R.string.tool_audio_title, R.string.tool_audio_subtitle, R.drawable.ic_tool_audio, AccentTeal),
         ToolDef(ToolKind.VIDEO, R.string.tool_video_title, R.string.tool_video_subtitle, R.drawable.ic_tool_video, AccentBlue),

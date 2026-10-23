@@ -1,5 +1,6 @@
 package com.converterplus.app.engine
 
+import com.converterplus.app.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -44,10 +45,10 @@ class FormatDefaultsTest {
     }
 
     @Test
-    fun `multi file is allowed only for images to pdf`() {
-        assertTrue(Capabilities.supportsMultipleFiles(ToolKind.IMAGES_TO_PDF))
-        assertFalse(Capabilities.supportsMultipleFiles(ToolKind.IMAGES))
-        assertFalse(Capabilities.supportsMultipleFiles(ToolKind.PDF_TO_IMAGES))
+    fun `multi file is not offered`() {
+        ToolKind.entries.forEach { tool ->
+            assertFalse(Capabilities.supportsMultipleFiles(tool))
+        }
     }
 
     @Test
@@ -68,9 +69,12 @@ class FormatDefaultsTest {
     }
 
     @Test
-    fun `all six tools are available`() {
-        assertEquals(ToolKind.entries.toSet(), Capabilities.AVAILABLE_TOOLS)
-        ToolKind.entries.forEach { tool ->
+    fun `available tools exclude withdrawn images to pdf`() {
+        assertFalse(Capabilities.isToolAvailable(ToolKind.IMAGES_TO_PDF))
+        assertEquals(R.string.reason_tool_soon, Capabilities.toolUnavailableReason(ToolKind.IMAGES_TO_PDF))
+        val available = ToolKind.entries.filter { it != ToolKind.IMAGES_TO_PDF }.toSet()
+        assertEquals(available, Capabilities.AVAILABLE_TOOLS)
+        available.forEach { tool ->
             assertTrue("инструмент ${tool.id} должен быть доступен", Capabilities.isToolAvailable(tool))
             assertNull(Capabilities.toolUnavailableReason(tool))
         }
