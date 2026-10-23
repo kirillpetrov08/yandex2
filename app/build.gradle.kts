@@ -130,10 +130,10 @@ val versionNameOverride: String? =
     (System.getenv("VERSION_NAME") ?: (project.findProperty("versionName") as? String))
         ?.trim()?.takeIf { it.isNotEmpty() }
 
-// Версия 1.0.2: размеры результата, чистый OCR и оформление истории.
+// Версия 1.0.3: без «Фото → PDF» (инструмент снят).
 // Магазин принимает загрузку только со строго большим versionCode.
-val appVersionCode: Int = versionCodeOverride ?: 3
-val appVersionName: String = versionNameOverride ?: "1.0.2"
+val appVersionCode: Int = versionCodeOverride ?: 4
+val appVersionName: String = versionNameOverride ?: "1.0.3"
 
 if (versionCodeOverride != null || versionNameOverride != null) {
     logger.lifecycle("Версия переопределена: versionCode=$appVersionCode, versionName=$appVersionName")

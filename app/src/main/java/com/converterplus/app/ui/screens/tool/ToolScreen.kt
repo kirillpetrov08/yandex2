@@ -145,10 +145,6 @@ fun ToolScreen(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri -> uri?.let { viewModel.onFilesPicked(listOf(it)) } }
 
-    val pickMultipleImages = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickMultipleVisualMedia(Capabilities.MAX_FILES_PER_CONVERSION),
-    ) { uris -> viewModel.onFilesPicked(uris) }
-
     val openDocument = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri -> uri?.let { viewModel.onFilesPicked(listOf(it)) } }
@@ -184,11 +180,7 @@ fun ToolScreen(
     fun openGalleryPicker() {
         val imageOnly = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
         try {
-            if (tool == ToolKind.IMAGES_TO_PDF) {
-                pickMultipleImages.launch(imageOnly)
-            } else {
-                pickImage.launch(imageOnly)
-            }
+            pickImage.launch(imageOnly)
         } catch (e: Exception) {
             openFilesPicker()
         }

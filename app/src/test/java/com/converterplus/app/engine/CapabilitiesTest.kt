@@ -141,9 +141,11 @@ class CapabilitiesTest {
     }
 
     @Test
-    fun `images to pdf offers only pdf`() {
-        val options = Capabilities.optionsFor(ToolKind.IMAGES_TO_PDF, image("jpg"), api26)
-        assertEquals(listOf(Formats.PDF), options.map { it.id })
+    fun `images to pdf is withdrawn`() {
+        assertFalse(Capabilities.isToolAvailable(ToolKind.IMAGES_TO_PDF))
+        assertTrue(
+            Capabilities.optionsFor(ToolKind.IMAGES_TO_PDF, image("jpg"), api26).isEmpty(),
+        )
     }
 
     @Test
@@ -239,7 +241,7 @@ class CapabilitiesTest {
     @Test
     fun `watermark and page selection are limited to the right tools`() {
         assertTrue(Capabilities.supportsWatermark(ToolKind.IMAGES))
-        assertTrue(Capabilities.supportsWatermark(ToolKind.IMAGES_TO_PDF))
+        assertFalse(Capabilities.supportsWatermark(ToolKind.IMAGES_TO_PDF))
         assertFalse(Capabilities.supportsWatermark(ToolKind.AUDIO))
         assertFalse(Capabilities.supportsWatermark(ToolKind.VIDEO))
         assertFalse(Capabilities.supportsWatermark(ToolKind.OCR))
@@ -284,7 +286,6 @@ class CapabilitiesTest {
         val cases = listOf(
             ToolKind.IMAGES to image("jpg"),
             ToolKind.PDF_TO_IMAGES to pdf(),
-            ToolKind.IMAGES_TO_PDF to image("png"),
         )
         cases.forEach { (tool, input) ->
             val default = Capabilities.defaultFormat(tool)

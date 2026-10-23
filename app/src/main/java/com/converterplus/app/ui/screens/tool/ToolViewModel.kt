@@ -295,7 +295,7 @@ class ToolViewModel(
             _events.trySend(ToolEvent.Snackbar(R.string.err_no_pages_selected))
             return
         }
-        if (tool != ToolKind.IMAGES_TO_PDF && Capabilities.isAlreadyInFormat(input, format)) {
+        if (Capabilities.isAlreadyInFormat(input, format)) {
             _state.update { it.copy(showSameFormatDialog = true) }
             return
         }
